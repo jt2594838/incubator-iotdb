@@ -363,10 +363,20 @@ public class BufferWriteProcessor extends Processor {
     lastFlushTime = System.nanoTime();
     // check value count
     // waiting for the end of last flush operation.
+    long beforeFlushFutureGetTime = System.currentTimeMillis();
     try {
       flushFuture.get();
     } catch (InterruptedException | ExecutionException e) {
       throw new IOException(e);
+    }
+    if (LOGGER.isInfoEnabled()) {
+      long afterFlushFutureGetTime = System.currentTimeMillis();
+      LOGGER.info(
+          "The BufferWrite processor ,{},: before flushFuture.get() time is ,{}, before flushFuture.get() time is ,{}, "
+              + "flushFuture.get() blocking time interval is ,{}, sec", getProcessorName(),
+          DatetimeUtils.convertMillsecondToZonedDateTime(beforeFlushFutureGetTime),
+          DatetimeUtils.convertMillsecondToZonedDateTime(afterFlushFutureGetTime),
+          (afterFlushFutureGetTime - beforeFlushFutureGetTime) / 1000.0);
     }
     if (valueCount > 0) {
       // update the lastUpdatetime, prepare for flush
