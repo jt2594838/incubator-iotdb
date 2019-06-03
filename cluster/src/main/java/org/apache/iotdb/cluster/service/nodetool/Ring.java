@@ -26,6 +26,7 @@ import org.apache.iotdb.cluster.service.nodetool.NodeTool.NodeToolCmd;
 
 @Command(name = "ring", description = "Print information about the hash ring")
 public class Ring extends NodeToolCmd {
+
   @Option(title = "physical_ring", name = {"-p", "--physical"}, description = "Show physical nodes instead of virtual ones")
   private boolean physical = false;
 

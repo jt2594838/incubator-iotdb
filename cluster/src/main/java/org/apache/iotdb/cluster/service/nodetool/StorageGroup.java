@@ -20,11 +20,16 @@ package org.apache.iotdb.cluster.service.nodetool;
 
 import io.airlift.airline.Command;
 import io.airlift.airline.Option;
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.iotdb.cluster.service.ClusterMonitorMBean;
 import org.apache.iotdb.cluster.service.nodetool.NodeTool.NodeToolCmd;
 
 @Command(name = "storagegroup", description = "Print all hosts information of specific storage group")
 public class StorageGroup extends NodeToolCmd {
+
+  @Option(title = "all storagegroup", name = {"-a", "--all"}, description = "Show hosts info of all storage groups")
+  private boolean showAll = false;
 
   @Option(title = "storage group", name = {"-sg",
       "--storagegroup"}, description = "Specify a storage group for accurate hosts information")
@@ -32,7 +37,18 @@ public class StorageGroup extends NodeToolCmd {
 
   @Override
   public void execute(ClusterMonitorMBean proxy) {
-    String nodes = proxy.getDataPartitionOfSG(sg);
-    System.out.println(nodes);
+    Set<String> sgSet;
+    if (showAll) {
+      sgSet = proxy.getAllStorageGroupsLocally();
+    } else {
+      sgSet = new HashSet<>();
+      sgSet.add(sg);
+    }
+
+    if (!showAll && sg == null) {
+      System.out.println("Metadata\t->\t" + proxy.getDataPartitionOfSG(sg));
+    } else {
+      sgSet.forEach(sg -> System.out.println(sg + "\t->\t" + proxy.getDataPartitionOfSG(sg)));
+    }
   }
 }
