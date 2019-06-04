@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -758,12 +759,37 @@ public class RaftUtils {
    */
   public static Map<String, Boolean> getStatusMapForCluster() {
     PeerId[] peerIds = RaftUtils.convertStringArrayToPeerIdArray(config.getNodes());
-    Map<String, Boolean> res = new HashMap<>();
+    SortedMap<String, Boolean> treeMap = new TreeMap<>(new Comparator<String>() {
+      @Override
+      public int compare(String o1, String o2) {
+        int[] nums1 = convertIPToNums(o1);
+        int[] nums2 = convertIPToNums(o2);
+        for (int i = 0; i < Math.min(nums1.length, nums2.length); i++) {
+          if (nums1[i] == nums2[i]) {
+            continue;
+          } else {
+            return ((Integer) nums1[i]).compareTo(nums2[i]);
+          }
+        }
+        return 0;
+      }
+
+      private int[] convertIPToNums(String ip) {
+        String[] ss = ip.split("\\.");
+        int[] nums = new int[ss.length];
+        for (int i = 0; i < nums.length; i++) {
+          nums[i] = Integer.parseInt(ss[i]);
+        }
+        return nums;
+      }
+    });
     for (int i = 0; i < peerIds.length; i++) {
       PeerId peerId = peerIds[i];
-      res.put(peerId.getIp(), getStatusOfNode(peerId));
+      treeMap.put(peerId.getIp(), getStatusOfNode(peerId));
     }
 
+    Map<String, Boolean> res = new LinkedHashMap<>();
+    treeMap.forEach((ip, status) -> res.put(ip, status));
     return res;
   }
 
