@@ -58,10 +58,11 @@ public class ClusterQueryProcessExecutor extends AbstractQPExecutor implements I
   }
 
   @Override
-  public QueryDataSet processQuery(QueryPlan queryPlan, QueryContext context)
+  public QueryDataSet processQuery(PhysicalPlan plan, QueryContext context)
       throws IOException, FileNodeManagerException, PathErrorException,
       QueryFilterOptimizationException, ProcessorException {
 
+    QueryPlan queryPlan = (QueryPlan) plan;
     QueryExpression queryExpression = QueryExpression.create().setSelectSeries(queryPlan.getPaths())
         .setExpression(queryPlan.getExpression());
     clusterQueryRouter.setReadDataConsistencyLevel(getReadDataConsistencyLevel());

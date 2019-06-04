@@ -22,7 +22,6 @@ import com.alipay.sofa.jraft.entity.PeerId;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.iotdb.cluster.config.ClusterConfig;
-import org.apache.iotdb.cluster.config.ClusterConstant;
 import org.apache.iotdb.cluster.config.ClusterDescriptor;
 import org.apache.iotdb.cluster.entity.Server;
 import org.apache.iotdb.cluster.exception.ConsistencyLevelException;
@@ -198,20 +197,12 @@ public abstract class AbstractQPExecutor {
     }
   }
 
-  public void setReadMetadataConsistencyLevel(int level) throws ConsistencyLevelException {
-    if (level <= ClusterConstant.MAX_CONSISTENCY_LEVEL) {
-      readMetadataConsistencyLevel.set(level);
-    } else {
-      throw new ConsistencyLevelException(String.format("Consistency level %d not support", level));
-    }
+  public void setReadMetadataConsistencyLevel(int level) {
+    readMetadataConsistencyLevel.set(level);
   }
 
-  public void setReadDataConsistencyLevel(int level) throws ConsistencyLevelException {
-    if (level <= ClusterConstant.MAX_CONSISTENCY_LEVEL) {
-      readDataConsistencyLevel.set(level);
-    } else {
-      throw new ConsistencyLevelException(String.format("Consistency level %d not support", level));
-    }
+  public void setReadDataConsistencyLevel(int level) {
+    readDataConsistencyLevel.set(level);
   }
 
   public int getReadMetadataConsistencyLevel() {

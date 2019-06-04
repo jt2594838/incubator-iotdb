@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import org.apache.iotdb.cluster.config.ClusterConfig;
+import org.apache.iotdb.cluster.config.ClusterConsistencyLevel;
 import org.apache.iotdb.cluster.config.ClusterConstant;
 import org.apache.iotdb.cluster.entity.raft.MetadataRaftHolder;
 import org.apache.iotdb.cluster.entity.raft.RaftService;
@@ -398,7 +399,7 @@ public class QueryMetadataExecutor extends AbstractQPExecutor {
         ClusterConfig.METADATA_GROUP_ID, getReadMetadataConsistencyLevel());
     SingleQPTask task = new SingleQPTask(false, request);
     MetadataRaftHolder metadataHolder = (MetadataRaftHolder) server.getMetadataHolder();
-    if (getReadMetadataConsistencyLevel() == ClusterConstant.WEAK_CONSISTENCY_LEVEL) {
+    if (getReadMetadataConsistencyLevel() == ClusterConsistencyLevel.WEAK.ordinal()) {
       QueryStorageGroupResponse response;
       response = QueryStorageGroupResponse
           .createSuccessResponse(metadataHolder.getFsm().getAllStorageGroups());
