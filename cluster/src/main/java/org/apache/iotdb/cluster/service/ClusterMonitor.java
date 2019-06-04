@@ -21,6 +21,7 @@ package org.apache.iotdb.cluster.service;
 import com.alipay.sofa.jraft.entity.PeerId;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import org.apache.iotdb.cluster.utils.RaftUtils;
 import org.apache.iotdb.db.exception.StartupException;
 import org.apache.iotdb.db.service.IService;
@@ -89,6 +90,11 @@ public class ClusterMonitor implements ClusterMonitorMBean, IService {
       builder.append(", ").append(nodes[i].getIp());
     }
     return builder.toString();
+  }
+
+  @Override
+  public Set<String> getAllStorageGroupsLocally() {
+    return RaftUtils.getAllStorageGroupsLocally();
   }
 
   @Override

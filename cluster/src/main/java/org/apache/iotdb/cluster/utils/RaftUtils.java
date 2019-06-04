@@ -787,4 +787,9 @@ public class RaftUtils {
       return false;
     }
   }
+
+  public static Set<String> getAllStorageGroupsLocally() {
+    MetadataRaftHolder metadataRaftHolder = (MetadataRaftHolder) server.getMetadataHolder();
+    return metadataRaftHolder.getFsm().getAllStorageGroups();
+  }
 }

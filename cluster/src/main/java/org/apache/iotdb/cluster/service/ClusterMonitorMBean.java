@@ -19,6 +19,7 @@
 package org.apache.iotdb.cluster.service;
 
 import java.util.Map;
+import java.util.Set;
 
 public interface ClusterMonitorMBean {
 
@@ -51,6 +52,13 @@ public interface ClusterMonitorMBean {
    * @return data partition information in String format
    */
   String getDataPartitionOfSG(String sg);
+
+  /**
+   * Get all storage groups
+   *
+   * @return Set of all storage groups
+   */
+  Set<String> getAllStorageGroupsLocally();
 
   /**
    * Get data partitions that input node belongs to.

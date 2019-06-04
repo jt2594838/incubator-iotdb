@@ -108,15 +108,16 @@ The command to query data group information for storage group is `storagegroup`,
 
 |Parameter name| Description| Example |
 |:---|:---|:---|
+| -a \| --all | Whether to query all storage groups, default `false` | `-a` |
 | -sg \| --storagegroup <storage group path> | The path of the storage group that need to query, metadata group is queried by default | `-sg root.t1.d1` |
 
 #### Output
 
-The output is one string line that represents multiple node IPs, where each IP is separated by commas and the first one acts as the leader.
+The output is multiple string lines, each string line represents a key-value pair, where the key is storage group and the value is multiple node IPs, where each IP is separated by commas and the first one acts as the leader. The format of each line is `key -> value`.
 
 #### Example
 
-Assume that the IoTDB Cluster is running on 3 nodes: 192.168.130.14, 192.168.130.16 and 192.168.130.18, and number of replicas is 2.
+Assume that the IoTDB Cluster is running on 3 nodes: 192.168.130.14, 192.168.130.16 and 192.168.130.18, and number of replicas is 2, and contains three storage groups: {root.t1.d1、root.t1.d2、root.t1.d3}.
 
 * No storage group
 
@@ -131,7 +132,7 @@ Assume that the IoTDB Cluster is running on 3 nodes: 192.168.130.14, 192.168.130
 	After using the command, the successful output will be as follows: 
 	
 	```
-	192.168.130.14 (leader), 192.168.130.16, 192.168.130.18
+	Metadata  ->  192.168.130.14 (leader), 192.168.130.16, 192.168.130.18
 	```
 	The above output indicates that the current metadata group contains 3 nodes, among which 192.168.130.14 acts as leader.
 	
@@ -150,10 +151,31 @@ Assume that the IoTDB Cluster is running on 3 nodes: 192.168.130.14, 192.168.130
 	After using the command, the successful output will be as follows: 
 	
 	```
-	192.168.130.14 (leader), 192.168.130.18
+	root.t1.d1  ->  192.168.130.14 (leader), 192.168.130.18
 	```
 	The above output indicates that the data partition which `root.t1.d1` belongs to contains 2 nodes, among which 192.168.130.14 acts as leader.
 	
+* All storage groups
+
+	The Linux and MacOS system startup commands are as follows:
+	```
+	  Shell > ./bin/nodetool.sh -h 192.168.130.14 storagegroup -a
+	```
+	  
+	The Windows system startup commands are as follows:
+	```
+	  Shell > \bin\nodetool.bat -h 192.168.130.14 storagegroup -a
+	```
+	  
+	After using the command, the successful output will be as follows: 
+	
+	```
+	root.t1.d1  ->  192.168.130.14 (leader), 192.168.130.18
+	root.t1.d2  ->  192.168.130.16 (leader), 192.168.130.14
+	root.t1.d3  ->  192.168.130.18 (leader), 192.168.130.16
+	```
+	The above output indicates that current cluster contains three storage groups, wherein the data partition which `root.t1.d1` belongs to contains 2 nodes, among which 192.168.130.14 acts as leader; wherein the data partition which `root.t1.d2` belongs to contains 2 nodes, among which 192.168.130.16 acts as leader; wherein the data partition which `root.t1.d3` belongs to contains 2 nodes, among which 192.168.130.18 acts as leader.
+
 ### Query Data Partition Info and Storage Group for Host (host)
 
 The data partition and storage group of the IoTDB Cluster has a one-to-many relationship, that is, the same data partition contains multiple storage groups. A data partition consists of multiple nodes, the number of nodes is the number of replicas, and one of the nodes acts as leader. With this command, users are able to know all the data partitions to which the connected node belongs, and all the storage groups contained in each data partition.
