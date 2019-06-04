@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.apache.iotdb.cluster.config.ClusterConsistencyLevel;
 import org.apache.iotdb.cluster.config.ClusterConstant;
 import org.apache.iotdb.cluster.exception.ConsistencyLevelException;
 import org.apache.iotdb.cluster.qp.executor.ClusterQueryProcessExecutor;
@@ -251,14 +252,12 @@ public class TSServiceClusterImpl extends TSServiceImpl {
     statement = statement.toLowerCase().trim();
     try {
       if (Pattern.matches(ClusterConstant.SET_READ_METADATA_CONSISTENCY_LEVEL_PATTERN, statement)) {
-        String[] splits = statement.split("\\s+");
-        int level = Integer.parseInt(splits[splits.length - 1]);
+        int level = parseConsistencyLevel(statement);
         queryMetadataExecutor.setReadMetadataConsistencyLevel(level);
         return true;
       } else if (Pattern
           .matches(ClusterConstant.SET_READ_DATA_CONSISTENCY_LEVEL_PATTERN, statement)) {
-        String[] splits = statement.split("\\s+");
-        int level = Integer.parseInt(splits[splits.length - 1]);
+        int level = parseConsistencyLevel(statement);
         queryDataExecutor.setReadDataConsistencyLevel(level);
         return true;
       } else {
@@ -267,6 +266,16 @@ public class TSServiceClusterImpl extends TSServiceImpl {
     } catch (ConsistencyLevelException e) {
       throw new Exception(e.getMessage());
     }
+  }
+
+  private int parseConsistencyLevel(String statement) throws ConsistencyLevelException {
+    String[] splits = statement.split("\\s+");
+    String levelName = splits[splits.length - 1].toLowerCase();
+    int level = ClusterConsistencyLevel.getLevel(levelName);
+    if (level == ClusterConsistencyLevel.UNSUPPORT_LEVEL) {
+      throw new ConsistencyLevelException(String.format("Consistency level %s not support", levelName));
+    }
+    return level;
   }
 
   @Override

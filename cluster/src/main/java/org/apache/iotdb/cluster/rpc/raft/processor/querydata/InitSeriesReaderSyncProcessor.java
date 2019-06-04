@@ -20,6 +20,7 @@ package org.apache.iotdb.cluster.rpc.raft.processor.querydata;
 
 import com.alipay.remoting.BizContext;
 import com.alipay.sofa.jraft.Status;
+import org.apache.iotdb.cluster.config.ClusterConsistencyLevel;
 import org.apache.iotdb.cluster.config.ClusterConstant;
 import org.apache.iotdb.cluster.query.manager.querynode.ClusterLocalQueryManager;
 import org.apache.iotdb.cluster.rpc.raft.processor.BasicSyncUserProcessor;
@@ -51,7 +52,7 @@ public class InitSeriesReaderSyncProcessor extends BasicSyncUserProcessor<InitSe
    */
   private void handleNullRead(int readConsistencyLevel, String groupId) throws ProcessorException {
     LOGGER.debug("Read data level is {}", readConsistencyLevel);
-    if (readConsistencyLevel == ClusterConstant.STRONG_CONSISTENCY_LEVEL && !QPExecutorUtils
+    if (readConsistencyLevel == ClusterConsistencyLevel.STRONG.ordinal() && !QPExecutorUtils
         .checkDataGroupLeader(groupId)) {
       Status nullReadTaskStatus = Status.OK();
       RaftUtils.handleNullReadToDataGroup(nullReadTaskStatus, groupId);
