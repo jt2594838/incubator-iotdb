@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
-import org.apache.iotdb.db.engine.EngingeConstants;
+import org.apache.iotdb.db.engine.EngineConstants;
 import org.apache.iotdb.db.engine.version.SysTimeVersionController;
 import org.apache.iotdb.db.exception.BufferWriteProcessorException;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
@@ -76,22 +76,22 @@ public class BufferWriteBenchmark {
   public static void main(String[] args) throws BufferWriteProcessorException, IOException {
     before();
     Map<String, Action> parameters = new HashMap<>();
-    parameters.put(EngingeConstants.BUFFERWRITE_FLUSH_ACTION, new Action() {
+    parameters.put(EngineConstants.BUFFERWRITE_FLUSH_ACTION, new Action() {
       @Override
       public void act() throws ActionException {
-        System.out.println(EngingeConstants.BUFFERWRITE_FLUSH_ACTION);
+        System.out.println(EngineConstants.BUFFERWRITE_FLUSH_ACTION);
       }
     });
-    parameters.put(EngingeConstants.BUFFERWRITE_CLOSE_ACTION, new Action() {
+    parameters.put(EngineConstants.BUFFERWRITE_CLOSE_ACTION, new Action() {
       @Override
       public void act() throws ActionException {
-        System.out.println(EngingeConstants.BUFFERWRITE_CLOSE_ACTION);
+        System.out.println(EngineConstants.BUFFERWRITE_CLOSE_ACTION);
       }
     });
-    parameters.put(EngingeConstants.FILENODE_PROCESSOR_FLUSH_ACTION, new Action() {
+    parameters.put(EngineConstants.FILENODE_PROCESSOR_FLUSH_ACTION, new Action() {
       @Override
       public void act() throws ActionException {
-        System.out.println(EngingeConstants.FILENODE_PROCESSOR_FLUSH_ACTION);
+        System.out.println(EngineConstants.FILENODE_PROCESSOR_FLUSH_ACTION);
       }
     });
 

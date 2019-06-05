@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.iotdb.db.conf.directories.Directories;
-import org.apache.iotdb.db.engine.EngingeConstants;
+import org.apache.iotdb.db.engine.EngineConstants;
 import org.apache.iotdb.db.engine.MetadataManagerHelper;
 import org.apache.iotdb.db.engine.datasource.ReadOnlyMemChunk;
 import org.apache.iotdb.db.engine.version.SysTimeVersionController;
@@ -86,9 +86,9 @@ public class BufferWriteProcessorNewTest {
 
   @Before
   public void setUp() throws Exception {
-    parameters.put(EngingeConstants.BUFFERWRITE_FLUSH_ACTION, bfflushaction);
-    parameters.put(EngingeConstants.BUFFERWRITE_CLOSE_ACTION, bfcloseaction);
-    parameters.put(EngingeConstants.FILENODE_PROCESSOR_FLUSH_ACTION, fnflushaction);
+    parameters.put(EngineConstants.BUFFERWRITE_FLUSH_ACTION, bfflushaction);
+    parameters.put(EngineConstants.BUFFERWRITE_CLOSE_ACTION, bfcloseaction);
+    parameters.put(EngineConstants.FILENODE_PROCESSOR_FLUSH_ACTION, fnflushaction);
     MetadataManagerHelper.initMetadata();
     EnvironmentUtils.envSetUp();
   }

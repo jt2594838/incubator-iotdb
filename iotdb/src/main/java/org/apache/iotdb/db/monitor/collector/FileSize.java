@@ -61,11 +61,11 @@ public class FileSize implements IStatistic {
   @Override
   public Map<String, InsertPlan> getAllStatisticsValue() {
     long curTime = System.currentTimeMillis();
-    TSRecord tsRecord = StatMonitor
+    InsertPlan plan = StatMonitor
         .convertToInsertPlan(getStatParamsHashMap(), MonitorConstants.FILE_SIZE_STORAGE_GROUP_NAME,
             curTime);
-    HashMap<String, TSRecord> ret = new HashMap<>();
-    ret.put(MonitorConstants.FILE_SIZE_STORAGE_GROUP_NAME, tsRecord);
+    HashMap<String, InsertPlan> ret = new HashMap<>();
+    ret.put(MonitorConstants.FILE_SIZE_STORAGE_GROUP_NAME, plan);
     return ret;
   }
 

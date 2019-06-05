@@ -22,15 +22,12 @@ import java.io.IOException;
 import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import org.apache.iotdb.db.engine.bufferwrite.BufferWriteProcessor;
 import org.apache.iotdb.db.exception.ProcessorException;
 import org.apache.iotdb.db.exception.TsFileProcessorException;
 
 /**
  * Processor is used for implementing different processor with different operation.<br>
  *
- * @see BufferWriteProcessor
- * @see FileNodeProcessor
  */
 public abstract class Processor {
 

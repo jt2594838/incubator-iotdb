@@ -24,6 +24,7 @@ import org.apache.iotdb.db.concurrent.IoTDBDefaultThreadExceptionHandler;
 import org.apache.iotdb.db.conf.IoTDBConfig;
 import org.apache.iotdb.db.conf.IoTDBConstant;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
+import org.apache.iotdb.db.engine.DatabaseEngineFactory;
 import org.apache.iotdb.db.engine.memcontrol.BasicMemController;
 import org.apache.iotdb.db.exception.StorageGroupManagerException;
 import org.apache.iotdb.db.exception.PathErrorException;
@@ -81,14 +82,12 @@ public class IoTDB implements IoTDBMBean {
     Runtime.getRuntime().addShutdownHook(new IoTDBShutdownHook());
     setUncaughtExceptionHandler();
 
-    DatabaseEngineFactory.getCurrent().recovery();
+    //noinspection ResultOfMethodCallIgnored
+    DatabaseEngineFactory.getCurrent(); // implicit recover
     try {
       systemDataRecovery();
     } catch (RecoverException e) {
-      String errorMessage = String.format("Failed to recover system data because of %s",
-          e.getMessage());
-      LOGGER.error(errorMessage);
-      throw new StartupException(errorMessage);
+      throw new StartupException(e);
     }
     // When registering statMonitor, we should start recovering some statistics
     // with latest values stored
@@ -144,21 +143,7 @@ public class IoTDB implements IoTDBMBean {
     LOGGER.info("{}: start checking write log...", IoTDBConstant.GLOBAL_DB_NAME);
 
     WriteLogNodeManager writeLogManager = MultiFileLogNodeManager.getInstance();
-    List<String> filenodeNames = null;
-    try {
-      filenodeNames = MManager.getInstance().getAllStorageGroups();
-    } catch (PathErrorException e) {
-      throw new RecoverException(e);
-    }
-    for (String filenodeName : filenodeNames) {
-      if (writeLogManager.hasWAL(filenodeName)) {
-        try {
-          DatabaseEngineFactory.getCurrent().recoverFileNode(filenodeName);
-        } catch (StorageGroupManagerException e) {
-          throw new RecoverException(e);
-        }
-      }
-    }
+
     IoTDBConfig config = IoTDBDescriptor.getInstance().getConfig();
     boolean enableWal = config.isEnableWal();
     config.setEnableWal(false);

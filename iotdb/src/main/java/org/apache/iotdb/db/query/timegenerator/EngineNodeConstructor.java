@@ -98,7 +98,7 @@ public class EngineNodeConstructor {
 
     // reader for all unSequence data
     PriorityMergeReader unSeqMergeReader = SeriesReaderFactory.getInstance()
-        .createUnSeqMergeReader(queryDataSource.getOverflowSeriesDataSource(), filter);
+        .createUnSeqMergeReader(queryDataSource.getOverflowSeriesDataSource(), context, filter);
 
     if (!tsFilesReader.hasNext()) {
       //only have unsequence data.

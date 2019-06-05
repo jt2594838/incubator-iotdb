@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.apache.iotdb.db.conf.IoTDBConstant;
+import org.apache.iotdb.db.engine.DatabaseEngineFactory;
 import org.apache.iotdb.db.exception.StorageGroupManagerException;
 import org.apache.iotdb.db.exception.ProcessorException;
 import org.apache.iotdb.db.exception.RecoverException;
@@ -56,7 +57,6 @@ public class ExclusiveLogRecoverPerformer implements RecoverPerformer {
   private String restoreFilePath;
   private RecoverStage currStage;
   private LogReplayer replayer = new ConcreteLogReplayer();
-  private RecoverPerformer fileNodeRecoverPerformer;
   // recovery of Overflow maybe different from BufferWrite
   private boolean isOverflow;
 
@@ -66,12 +66,7 @@ public class ExclusiveLogRecoverPerformer implements RecoverPerformer {
   public ExclusiveLogRecoverPerformer(String restoreFilePath, ExclusiveWriteLogNode logNode) {
     this.restoreFilePath = restoreFilePath;
     this.writeLogNode = logNode;
-    this.fileNodeRecoverPerformer = new FileNodeRecoverPerformer(writeLogNode.getIdentifier());
     this.isOverflow = logNode.getFileNodeName().contains(IoTDBConstant.OVERFLOW_LOG_NODE_SUFFIX);
-  }
-
-  public void setFileNodeRecoverPerformer(RecoverPerformer fileNodeRecoverPerformer) {
-    this.fileNodeRecoverPerformer = fileNodeRecoverPerformer;
   }
 
   public void setReplayer(LogReplayer replayer) {
@@ -222,8 +217,6 @@ public class ExclusiveLogRecoverPerformer implements RecoverPerformer {
       throw new RecoverException("Cannot recover restore file, recovery aborted.");
     }
 
-    fileNodeRecoverPerformer.recover();
-
     currStage = REPLAY_LOG;
     logger.info("Log node {} recover files ended", writeLogNode.getLogDirectory());
     replayLog();
@@ -284,7 +277,7 @@ public class ExclusiveLogRecoverPerformer implements RecoverPerformer {
               + " logs failed to recover, see logs above for details");
     }
     try {
-      DatabaseEngineFactory.getCurrent().closeOneFileNode(writeLogNode.getFileNodeName());
+      DatabaseEngineFactory.getCurrent().closeStorageGroup(writeLogNode.getFileNodeName());
     } catch (StorageGroupManagerException e) {
       logger.error("Log node {} cannot perform flush after replaying logs! Because {}",
           writeLogNode.getIdentifier(), e.getMessage());

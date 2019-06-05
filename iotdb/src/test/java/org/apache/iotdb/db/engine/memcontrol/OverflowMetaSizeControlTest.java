@@ -29,7 +29,7 @@ import org.apache.iotdb.db.conf.IoTDBDescriptor;
 import org.apache.iotdb.db.engine.MetadataManagerHelper;
 import org.apache.iotdb.db.engine.bufferwrite.Action;
 import org.apache.iotdb.db.engine.bufferwrite.ActionException;
-import org.apache.iotdb.db.engine.EngingeConstants;
+import org.apache.iotdb.db.engine.EngineConstants;
 import org.apache.iotdb.db.engine.version.SysTimeVersionController;
 import org.apache.iotdb.db.engine.overflow.io.OverflowProcessor;
 import org.apache.iotdb.db.exception.OverflowProcessorException;
@@ -95,8 +95,8 @@ public class OverflowMetaSizeControlTest {
   @Before
   public void setUp() throws Exception {
     parameters = new HashMap<String, Action>();
-    parameters.put(EngingeConstants.OVERFLOW_FLUSH_ACTION, overflowflushaction);
-    parameters.put(EngingeConstants.FILENODE_PROCESSOR_FLUSH_ACTION, filenodeflushaction);
+    parameters.put(EngineConstants.OVERFLOW_FLUSH_ACTION, overflowflushaction);
+    parameters.put(EngineConstants.FILENODE_PROCESSOR_FLUSH_ACTION, filenodeflushaction);
 
     overflowFileSize = dbConfig.getOverflowMetaSizeThreshold();
     groupSize = tsconfig.groupSizeInByte;

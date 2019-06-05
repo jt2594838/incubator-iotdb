@@ -27,6 +27,7 @@ import org.apache.iotdb.db.engine.datasource.QueryDataSource;
 import org.apache.iotdb.db.exception.StorageGroupManagerException;
 import org.apache.iotdb.db.qp.physical.crud.InsertPlan;
 import org.apache.iotdb.db.query.context.QueryContext;
+import org.apache.iotdb.db.service.IService;
 import org.apache.iotdb.tsfile.file.metadata.enums.CompressionType;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSEncoding;
@@ -36,7 +37,7 @@ import org.apache.iotdb.tsfile.read.expression.impl.SingleSeriesExpression;
 /**
  * DatabaseEngine is an abstraction of IoTDB storage-level interfaces.
  */
-public interface DatabaseEngine {
+public interface DatabaseEngine extends IService {
 
   /**
    * This function is just for unit test.

@@ -42,7 +42,7 @@ import org.apache.iotdb.db.conf.IoTDBConstant;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
 import org.apache.iotdb.db.conf.directories.Directories;
 import org.apache.iotdb.db.engine.Processor;
-import org.apache.iotdb.db.engine.EngingeConstants;
+import org.apache.iotdb.db.engine.EngineConstants;
 import org.apache.iotdb.db.engine.sgmanager.TsFileResource;
 import org.apache.iotdb.db.engine.memcontrol.BasicMemController;
 import org.apache.iotdb.db.engine.memcontrol.BasicMemController.UsageLevel;
@@ -234,12 +234,12 @@ public class TsFileProcessor extends Processor {
       throws TsFileProcessorException {
     File[] tsFiles = dataFolder
         .listFiles(x -> !x.getName().contains(RestorableTsFileIOWriter.RESTORE_SUFFIX)
-            && x.getName().split(EngingeConstants.TSFILE_NAME_SEPARATOR).length == 2);
+            && x.getName().split(EngineConstants.TSFILE_NAME_SEPARATOR).length == 2);
     if (tsFiles == null || tsFiles.length == 0) {
       return;
     }
     Arrays.sort(tsFiles, Comparator.comparingLong(x -> Long
-        .parseLong(x.getName().split(EngingeConstants.TSFILE_NAME_SEPARATOR)[0])));
+        .parseLong(x.getName().split(EngineConstants.TSFILE_NAME_SEPARATOR)[0])));
 
     for (File tsfile : tsFiles) {
       if (tsfile.getName().endsWith(StorageGroupProcessor.MERGE_TEMP_SUFFIX)) {
@@ -257,7 +257,7 @@ public class TsFileProcessor extends Processor {
   // add one TsFiles to tsFileResources and update device inserted time map
   private void addResource(File tsfile) throws TsFileProcessorException {
     //TODO we'd better define a file suffix for TsFile, e.g., .ts
-    String[] names = tsfile.getName().split(EngingeConstants.TSFILE_NAME_SEPARATOR);
+    String[] names = tsfile.getName().split(EngineConstants.TSFILE_NAME_SEPARATOR);
     long time = Long.parseLong(names[0]);
     if (fileNamePrefix < time) {
       fileNamePrefix = time;
@@ -297,7 +297,7 @@ public class TsFileProcessor extends Processor {
       LOGGER.debug("The bufferwrite processor data dir doesn't exists, create new directory {}.",
           dataFolder.getAbsolutePath());
     }
-    String fileName = (fileNamePrefix + 1) + EngingeConstants.TSFILE_NAME_SEPARATOR
+    String fileName = (fileNamePrefix + 1) + EngineConstants.TSFILE_NAME_SEPARATOR
         + System.currentTimeMillis();
     return new File(dataFolder, fileName);
   }

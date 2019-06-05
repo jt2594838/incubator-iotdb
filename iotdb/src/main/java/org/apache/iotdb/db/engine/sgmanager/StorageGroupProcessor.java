@@ -48,7 +48,7 @@ import org.apache.iotdb.db.conf.IoTDBConstant;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
 import org.apache.iotdb.db.conf.directories.Directories;
 import org.apache.iotdb.db.engine.Processor;
-import org.apache.iotdb.db.engine.EngingeConstants;
+import org.apache.iotdb.db.engine.EngineConstants;
 import org.apache.iotdb.db.engine.merge.MergeTask;
 import org.apache.iotdb.db.engine.modification.Deletion;
 import org.apache.iotdb.db.engine.modification.ModificationFile;
@@ -269,16 +269,19 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
   @Override
   public Map<String, InsertPlan> getAllStatisticsValue() {
     Long curTime = System.currentTimeMillis();
-    HashMap<String, TSRecord> tsRecordHashMap = new HashMap<>();
-    TSRecord tsRecord = new TSRecord(curTime, statStorageGroupName);
-
+    HashMap<String, InsertPlan> tsRecordHashMap = new HashMap<>();
     Map<String, AtomicLong> hashMap = getStatParamsHashMap();
-    tsRecord.dataPointList = new ArrayList<>();
-    for (Map.Entry<String, AtomicLong> entry : hashMap.entrySet()) {
-      tsRecord.dataPointList.add(new LongDataPoint(entry.getKey(), entry.getValue().get()));
-    }
+    String[] measurements = new String[hashMap.size()];
+    String[] values = new String[hashMap.size()];
 
-    tsRecordHashMap.put(statStorageGroupName, tsRecord);
+    int i = 0;
+    for (Map.Entry<String, AtomicLong> entry : hashMap.entrySet()) {
+      measurements[i] = entry.getKey();
+      values[i++] = entry.getValue().toString();
+    }
+    InsertPlan plan = new InsertPlan(statStorageGroupName, curTime, measurements, values);
+
+    tsRecordHashMap.put(statStorageGroupName, plan);
     return tsRecordHashMap;
   }
 
@@ -780,7 +783,7 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
 
     mergeBaseDir = Directories.getInstance().getNextFolderForTsfile();
     mergeFileName = minimumTime
-        + EngingeConstants.TSFILE_NAME_SEPARATOR + System.currentTimeMillis()
+        + EngineConstants.TSFILE_NAME_SEPARATOR + System.currentTimeMillis()
         + MERGE_TEMP_SUFFIX;
     mergeOutputPath = constructOutputFilePath(mergeBaseDir, getProcessorName(),
         mergeFileName);

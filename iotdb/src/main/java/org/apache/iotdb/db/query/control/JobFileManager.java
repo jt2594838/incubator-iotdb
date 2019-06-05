@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.iotdb.db.engine.sgmanager.TsFileResource;
-import org.apache.iotdb.db.engine.datasource.OverflowInsertFile;
 import org.apache.iotdb.db.engine.datasource.QueryDataSource;
 
 /**
@@ -66,11 +65,16 @@ public class JobFileManager {
       addFilePathToMap(jobId, unSealedFilePath, false);
     }
 
-    for (OverflowInsertFile overflowInsertFile : dataSource.getOverflowSeriesDataSource()
-        .getOverflowInsertFileList()) {
-      String overflowFilePath = overflowInsertFile.getFilePath();
+    for (TsFileResource tsFileResource : dataSource.getOverflowSeriesDataSource().getSealedFiles()) {
+      String overflowFilePath = tsFileResource.getFilePath();
       // overflow is unclosed by default
-      addFilePathToMap(jobId, overflowFilePath, false);
+      addFilePathToMap(jobId, overflowFilePath, true);
+    }
+
+    if (dataSource.getOverflowSeriesDataSource().hasUnsealedFile()) {
+      String unSealedFilePath = dataSource.getOverflowSeriesDataSource()
+          .getUnsealedFile().getFilePath();
+      addFilePathToMap(jobId, unSealedFilePath, false);
     }
   }
 

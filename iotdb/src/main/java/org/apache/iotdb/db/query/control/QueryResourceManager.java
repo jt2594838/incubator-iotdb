@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.iotdb.db.engine.DatabaseEngineFactory;
-import org.apache.iotdb.db.engine.datasource.OverflowSeriesDataSource;
 import org.apache.iotdb.db.engine.datasource.QueryDataSource;
 import org.apache.iotdb.db.exception.StorageGroupManagerException;
 import org.apache.iotdb.db.query.context.QueryContext;

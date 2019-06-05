@@ -22,9 +22,9 @@ package org.apache.iotdb.db.engine;
  * Constants for using in bufferwrite, overflow and filenode.
  *
  */
-public class EngingeConstants {
+public class EngineConstants {
 
-  private EngingeConstants(){
+  private EngineConstants(){
   }
 
   public static final String OVERFLOW_FLUSH_ACTION = "OVERFLOW_FLUSH_ACTION";

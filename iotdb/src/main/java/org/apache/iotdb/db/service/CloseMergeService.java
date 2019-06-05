@@ -26,6 +26,7 @@ import org.apache.iotdb.db.concurrent.IoTDBThreadPoolFactory;
 import org.apache.iotdb.db.concurrent.ThreadName;
 import org.apache.iotdb.db.conf.IoTDBConfig;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
+import org.apache.iotdb.db.engine.DatabaseEngineFactory;
 import org.apache.iotdb.db.exception.StartupException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

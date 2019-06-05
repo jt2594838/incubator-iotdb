@@ -37,8 +37,8 @@ import org.apache.iotdb.db.exception.StorageGroupManagerException;
 import org.apache.iotdb.db.exception.PathErrorException;
 import org.apache.iotdb.db.exception.ProcessorException;
 import org.apache.iotdb.db.metadata.MManager;
+import org.apache.iotdb.db.qp.physical.crud.InsertPlan;
 import org.apache.iotdb.tsfile.exception.write.WriteProcessException;
-import org.apache.iotdb.tsfile.write.record.TSRecord;
 import org.apache.iotdb.tsfile.write.schema.FileSchema;
 import org.apache.iotdb.tsfile.write.schema.MeasurementSchema;
 import org.slf4j.Logger;
@@ -128,13 +128,13 @@ public class LoadDataUtils {
   }
 
   private void loadOneRecordLine(String line) {
-    TSRecord record = RecordUtils.parseSimpleTupleRecord(line, this.fileSchema);
-    totalPointCount += record.dataPointList.size();
+    InsertPlan plan = RecordUtils.parseSimpleTuplePlan(line, this.fileSchema);
+    totalPointCount += plan.getValues().length;
     String nsPath = null;
     try {
-      nsPath = mmanager.getStorageGroupByPath(record.deviceId);
+      nsPath = mmanager.getStorageGroupByPath(plan.getDeviceId());
     } catch (PathErrorException e) {
-      logger.error("given seriesPath not found, given deviceId:{}", record.deviceId, e);
+      logger.error("given seriesPath not found, given deviceId:{}", plan.getDeviceId(), e);
     }
     if (!writeInstanceMap.contains(nsPath)) {
       if (writeInstanceMap.size() < writeInstanceThreshold) {
@@ -152,7 +152,7 @@ public class LoadDataUtils {
     }
     // appeared before, insert directly
     try {
-      databaseEngine.insert(record, false);
+      databaseEngine.insert(plan, false);
     } catch (StorageGroupManagerException e) {
       logger.error("failed when insert into databaseEngine, record:{}", line, e);
     }

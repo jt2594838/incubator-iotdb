@@ -59,7 +59,6 @@ import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSEncoding;
 import org.apache.iotdb.tsfile.read.common.Path;
 import org.apache.iotdb.tsfile.read.expression.impl.SingleSeriesExpression;
-import org.apache.iotdb.tsfile.write.record.TSRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -143,11 +142,11 @@ public class StorageGroupManager implements IStatistic, IService, DatabaseEngine
   @Override
   public Map<String, InsertPlan> getAllStatisticsValue() {
     long curTime = System.currentTimeMillis();
-    TSRecord tsRecord = StatMonitor
+    InsertPlan plan = StatMonitor
         .convertToInsertPlan(getStatParamsHashMap(), MonitorConstants.STAT_STORAGE_DELTA_NAME,
             curTime);
-    HashMap<String, TSRecord> ret = new HashMap<>();
-    ret.put(MonitorConstants.STAT_STORAGE_DELTA_NAME, tsRecord);
+    HashMap<String, InsertPlan> ret = new HashMap<>();
+    ret.put(MonitorConstants.STAT_STORAGE_DELTA_NAME, plan);
     return ret;
   }
 

@@ -91,7 +91,7 @@ public class GroupByWithOnlyTimeFilterDataSetDataSet extends GroupByEngineDataSe
 
       // unseq reader for all chunk groups in unSeqFile, memory
       PriorityMergeReader unSeqMergeReader = SeriesReaderFactory.getInstance()
-          .createUnSeqMergeReader(queryDataSource.getOverflowSeriesDataSource(), timeFilter);
+          .createUnSeqMergeReader(queryDataSource.getOverflowSeriesDataSource(), context, timeFilter);
 
       sequenceReaderList.add(sequenceReader);
       unSequenceReaderList.add(unSeqMergeReader);

@@ -18,6 +18,7 @@
  */
 package org.apache.iotdb.db.utils;
 
+import org.apache.iotdb.db.qp.physical.crud.InsertPlan;
 import org.apache.iotdb.tsfile.common.constant.JsonFormatConstant;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.utils.Binary;
@@ -49,9 +50,9 @@ public class RecordUtils {
    *
    * @param str - input string
    * @param schema - constructed file schema
-   * @return TSRecord constructed from str
+   * @return InsertPlan constructed from str
    */
-  public static TSRecord parseSimpleTupleRecord(String str, FileSchema schema) {
+  public static InsertPlan parseSimpleTuplePlan(String str, FileSchema schema) {
     // split items
     String[] items = str.split(JsonFormatConstant.TSRECORD_SEPARATOR);
     // get deviceId and timestamp, then create a new TSRecord
@@ -62,54 +63,27 @@ public class RecordUtils {
     } catch (NumberFormatException e) {
       LOG.warn("given timestamp is illegal:{}", str);
       // return a TSRecord without any data points
-      return new TSRecord(-1, deviceId);
+      return new InsertPlan(deviceId, -1, null, null);
     }
-    TSRecord ret = new TSRecord(timestamp, deviceId);
-
+    int valuesNum = (items.length - 2) / 2;
+    String[] measurements = new String[valuesNum];
+    String[] values = new String[valuesNum];
+    int idx = 0;
     // loop all rest items except the last one
     String measurementId;
     TSDataType type;
     for (int i = 2; i < items.length - 1; i += 2) {
       // get measurementId and value
       measurementId = items[i].trim();
+      String value = items[i + 1].trim();
       type = schema.getMeasurementDataType(measurementId);
       if (type == null) {
         LOG.warn("measurementId:{},type not found, pass", measurementId);
         continue;
       }
-      String value = items[i + 1].trim();
-      // if value is not null, wrap it with corresponding DataPoint and add to TSRecord
-      if (!"".equals(value)) {
-        try {
-          switch (type) {
-            case INT32:
-              ret.addTuple(new IntDataPoint(measurementId, Integer.valueOf(value)));
-              break;
-            case INT64:
-              ret.addTuple(new LongDataPoint(measurementId, Long.valueOf(value)));
-              break;
-            case FLOAT:
-              ret.addTuple(new FloatDataPoint(measurementId, Float.valueOf(value)));
-              break;
-            case DOUBLE:
-              ret.addTuple(new DoubleDataPoint(measurementId, Double.valueOf(value)));
-              break;
-            case BOOLEAN:
-              ret.addTuple(new BooleanDataPoint(measurementId, Boolean.valueOf(value)));
-              break;
-            case TEXT:
-              ret.addTuple(new StringDataPoint(measurementId, Binary.valueOf(items[i + 1])));
-              break;
-            default:
-
-              LOG.warn("unsupported data type:{}", type);
-              break;
-          }
-        } catch (NumberFormatException e) {
-          LOG.warn("parsing measurement meets error, omit it: {}", e.getMessage());
-        }
-      }
+      measurements[idx] = measurementId;
+      values[idx++] = value;
     }
-    return ret;
+    return new InsertPlan(deviceId, timestamp, measurements, values);
   }
 }
