@@ -37,6 +37,7 @@ import org.apache.iotdb.tsfile.read.filter.basic.Filter;
 import org.apache.iotdb.tsfile.read.reader.series.FileSeriesReader;
 import org.apache.iotdb.tsfile.read.reader.series.FileSeriesReaderWithFilter;
 import org.apache.iotdb.tsfile.read.reader.series.FileSeriesReaderWithoutFilter;
+import org.apache.iotdb.tsfile.utils.Pair;
 
 public class QueryUtils {
 
@@ -95,6 +96,22 @@ public class QueryUtils {
     FileSeriesReader seriesReader;
 
     // to avoid too many opened files
+    Pair<ChunkLoader, List<ChunkMetaData>> chunkRst = queryChunks(tsfile, path, context);
+
+    if (isReverse) {
+      Collections.reverse(chunkRst.right);
+    }
+
+    if (filter == null) {
+      seriesReader = new FileSeriesReaderWithoutFilter(chunkRst.left, chunkRst.right);
+    } else {
+      seriesReader = new FileSeriesReaderWithFilter(chunkRst.left, chunkRst.right, filter);
+    }
+    return seriesReader;
+  }
+
+  public static Pair<ChunkLoader, List<ChunkMetaData>> queryChunks(TsFileResource tsfile,
+      Path path, QueryContext context) throws IOException {
     TsFileSequenceReader tsFileReader = FileReaderManager.getInstance()
         .get(tsfile.getFilePath(), true);
 
@@ -108,16 +125,6 @@ public class QueryUtils {
     }
 
     ChunkLoader chunkLoader = new ChunkLoaderImpl(tsFileReader);
-
-    if (isReverse) {
-      Collections.reverse(metaDataList);
-    }
-
-    if (filter == null) {
-      seriesReader = new FileSeriesReaderWithoutFilter(chunkLoader, metaDataList);
-    } else {
-      seriesReader = new FileSeriesReaderWithFilter(chunkLoader, metaDataList, filter);
-    }
-    return seriesReader;
+    return new Pair<>(chunkLoader, metaDataList);
   }
 }

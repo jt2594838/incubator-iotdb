@@ -556,7 +556,7 @@ public class SyncServiceImpl implements SyncService.Iface {
             }
           }
           insertExecutor
-              .multiInsert(new InsertPlan(deviceId, record.getTimestamp(),
+              .insert(new InsertPlan(deviceId, record.getTimestamp(),
                   measurementList.toArray(new String[]{}), insertValues.toArray(new String[]{})));
         }
       }
@@ -631,13 +631,13 @@ public class SyncServiceImpl implements SyncService.Iface {
           /** If there has no overlap data with the timeseries, inserting all data in the sync file **/
           if (originDataPoints.isEmpty()) {
             for (InsertPlan insertPlan : newDataPoints) {
-              insertExecutor.multiInsert(insertPlan);
+              insertExecutor.insert(insertPlan);
             }
           } else {
             /** Compare every data to get valid data **/
             for (InsertPlan insertPlan : newDataPoints) {
               if (!originDataPoints.contains(insertPlan)) {
-                insertExecutor.multiInsert(insertPlan);
+                insertExecutor.insert(insertPlan);
               }
             }
           }

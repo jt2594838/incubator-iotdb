@@ -22,10 +22,8 @@ import static junit.framework.TestCase.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import org.apache.iotdb.db.conf.IoTDBConfig;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
-import org.apache.iotdb.db.exception.MetadataArgsErrorException;
 import org.apache.iotdb.db.exception.PathErrorException;
 import org.apache.iotdb.db.exception.RecoverException;
 import org.apache.iotdb.db.metadata.MManager;
@@ -72,7 +70,7 @@ public class WriteLogNodeManagerTest {
 
     WriteLogNodeManager manager = MultiFileLogNodeManager.getInstance();
     WriteLogNode logNode = manager
-        .getNode("root.managerTest", tempRestore.getPath(), tempProcessorStore.getPath());
+        .getNode("root.managerTest", tempRestore.getPath());
 
     InsertPlan bwInsertPlan = new InsertPlan(1, "logTestDevice", 100,
         new String[]{"s1", "s2", "s3", "s4"},
@@ -98,10 +96,9 @@ public class WriteLogNodeManagerTest {
   }
 
   @Test
-  public void testRecoverAll() throws IOException, RecoverException, MetadataArgsErrorException {
+  public void testRecoverAll() throws IOException, RecoverException {
     // this test create 5 log nodes and recover them
     File tempRestore = File.createTempFile("managerTest", "restore");
-    File tempProcessorStore = File.createTempFile("managerTest", "processorStore");
 
     WriteLogNodeManager manager = MultiFileLogNodeManager.getInstance();
     for (int i = 0; i < 5; i++) {
@@ -119,16 +116,16 @@ public class WriteLogNodeManagerTest {
       } catch (PathErrorException ignored) {
       }
       WriteLogNode logNode = manager
-          .getNode(deviceName, tempRestore.getPath(), tempProcessorStore.getPath());
+          .getNode(deviceName, tempRestore.getPath());
 
       InsertPlan bwInsertPlan = new InsertPlan(1, deviceName, 100,
           new String[]{"s1", "s2", "s3", "s4"},
           new String[]{"1.0", "15", "str", "false"});
-      UpdatePlan updatePlan = new UpdatePlan(0, 100, "2.0", new Path(deviceName + ".s1"));
+      // UpdatePlan updatePlan = new UpdatePlan(0, 100, "2.0", new Path(deviceName + ".s1"));
       DeletePlan deletePlan = new DeletePlan(50, new Path(deviceName + ".s1"));
 
       logNode.write(bwInsertPlan);
-      logNode.write(updatePlan);
+      // logNode.write(updatePlan);
       logNode.write(deletePlan);
 
       logNode.forceSync();

@@ -37,20 +37,18 @@ import org.apache.iotdb.db.conf.IoTDBConstant;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
 import org.apache.iotdb.db.conf.directories.Directories;
 import org.apache.iotdb.db.engine.DatabaseEngine;
-import org.apache.iotdb.db.engine.memcontrol.BasicMemController;
 import org.apache.iotdb.db.engine.datasource.QueryDataSource;
+import org.apache.iotdb.db.engine.memcontrol.BasicMemController;
 import org.apache.iotdb.db.exception.PathErrorException;
 import org.apache.iotdb.db.exception.StorageGroupManagerException;
 import org.apache.iotdb.db.exception.TsFileProcessorException;
 import org.apache.iotdb.db.metadata.MManager;
-import org.apache.iotdb.db.monitor.IStatistic;
 import org.apache.iotdb.db.monitor.MonitorConstants;
 import org.apache.iotdb.db.monitor.MonitorConstants.StorageGroupManagerStatConstants;
 import org.apache.iotdb.db.monitor.StatMonitor;
 import org.apache.iotdb.db.qp.physical.crud.InsertPlan;
 import org.apache.iotdb.db.query.context.QueryContext;
 import org.apache.iotdb.db.query.control.FileReaderManager;
-import org.apache.iotdb.db.service.IService;
 import org.apache.iotdb.db.service.ServiceType;
 import org.apache.iotdb.db.writelog.manager.MultiFileLogNodeManager;
 import org.apache.iotdb.tsfile.common.conf.TSFileConfig;
@@ -66,7 +64,7 @@ import org.slf4j.LoggerFactory;
  * StorageGroupManager provides top-level interfaces to access IoTDB storage engine. It decides
  * which StorageGroup(s) to access in order to complete a query.
  */
-public class StorageGroupManager implements IStatistic, IService, DatabaseEngine {
+public class StorageGroupManager implements DatabaseEngine {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(StorageGroupManager.class);
   private static final IoTDBConfig TsFileDBConf = IoTDBDescriptor.getInstance().getConfig();
@@ -237,15 +235,15 @@ public class StorageGroupManager implements IStatistic, IService, DatabaseEngine
       throw new StorageGroupManagerException("Restoring all StorageGroups failed.", e);
     }
     for (String storageGroupName : storageGroupNames) {
-      StorageGroupProcessor StorageGroupProcessor = null;
+      StorageGroupProcessor storageGroupProcessor = null;
       try {
-        StorageGroupProcessor = getProcessor(storageGroupName, true);
+        storageGroupProcessor = getProcessor(storageGroupName, true);
       } catch (StorageGroupManagerException e) {
         throw new StorageGroupManagerException(String.format("Restoring StorageGroup %s failed.",
             storageGroupName), e);
       } finally {
-        if (StorageGroupProcessor != null) {
-          StorageGroupProcessor.writeUnlock();
+        if (storageGroupProcessor != null) {
+          storageGroupProcessor.writeUnlock();
         }
       }
     }
@@ -307,8 +305,7 @@ public class StorageGroupManager implements IStatistic, IService, DatabaseEngine
 
   @Override
   public void update(String deviceId, String measurementId, long startTime, long endTime,
-      TSDataType type, String v)
-      throws StorageGroupManagerException {
+      TSDataType type, String v) {
     throw new UnsupportedOperationException("Method unimplemented");
   }
 

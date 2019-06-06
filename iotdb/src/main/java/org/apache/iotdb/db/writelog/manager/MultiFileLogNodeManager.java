@@ -147,8 +147,8 @@ public class MultiFileLogNodeManager implements WriteLogNodeManager, IService {
 
   @Override
   public void close() {
-    if (!isActivated(syncThread) && !isActivated(forceThread)) {
-      logger.error("MultiFileLogNodeManager has not yet started");
+    if (!isActivated(syncThread) && !isActivated(forceThread) && nodeMap.isEmpty()) {
+      logger.warn("MultiFileLogNodeManager has not yet started and there is no node to close");
       return;
     }
     logger.info("LogNodeManager starts closing..");
@@ -233,9 +233,6 @@ public class MultiFileLogNodeManager implements WriteLogNodeManager, IService {
 
   @Override
   public void stop() {
-    if (!config.isEnableWal()) {
-      return;
-    }
     close();
   }
 

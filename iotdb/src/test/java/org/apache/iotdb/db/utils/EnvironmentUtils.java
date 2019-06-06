@@ -26,20 +26,16 @@ import org.apache.iotdb.db.auth.authorizer.LocalFileAuthorizer;
 import org.apache.iotdb.db.conf.IoTDBConfig;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
 import org.apache.iotdb.db.conf.directories.Directories;
-import org.apache.iotdb.db.engine.cache.RowGroupBlockMetaDataCache;
-import org.apache.iotdb.db.engine.cache.TsFileMetaDataCache;
-import org.apache.iotdb.db.engine.filenode.DatabaseEngine;
+import org.apache.iotdb.db.engine.DatabaseEngineFactory;
 import org.apache.iotdb.db.engine.memcontrol.BasicMemController;
-import org.apache.iotdb.db.exception.StorageGroupManagerException;
 import org.apache.iotdb.db.exception.StartupException;
+import org.apache.iotdb.db.exception.StorageGroupManagerException;
 import org.apache.iotdb.db.metadata.MManager;
 import org.apache.iotdb.db.monitor.StatMonitor;
 import org.apache.iotdb.db.query.context.QueryContext;
 import org.apache.iotdb.db.query.control.FileReaderManager;
 import org.apache.iotdb.db.query.control.QueryResourceManager;
 import org.apache.iotdb.db.writelog.manager.MultiFileLogNodeManager;
-import org.apache.iotdb.tsfile.common.conf.TSFileConfig;
-import org.apache.iotdb.tsfile.common.conf.TSFileDescriptor;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +54,6 @@ public class EnvironmentUtils {
 
   private static IoTDBConfig config = IoTDBDescriptor.getInstance().getConfig();
   private static Directories directories = Directories.getInstance();
-  private static TSFileConfig tsfileConfig = TSFileDescriptor.getInstance().getConfig();
 
   public static long TEST_QUERY_JOB_ID = QueryResourceManager.getInstance().assignJobId();
   public static QueryContext TEST_QUERY_CONTEXT = new QueryContext(TEST_QUERY_JOB_ID);
@@ -70,10 +65,10 @@ public class EnvironmentUtils {
     // clear opened file streams
     FileReaderManager.getInstance().closeAndRemoveAllOpenedReaders();
 
-    // tsFileConfig.duplicateIncompletedPage = false;
+    // tsFileConfig.duplicateIncompletePage = false;
     // clean filenode manager
     try {
-      if (!DatabaseEngine.getInstance().deleteAll()) {
+      if (!DatabaseEngineFactory.getCurrent().deleteAll()) {
         LOGGER.error("Can't close the filenode manager in EnvironmentUtils");
         Assert.fail();
       }
@@ -81,18 +76,15 @@ public class EnvironmentUtils {
       throw new IOException(e);
     }
     StatMonitor.getInstance().close();
-    DatabaseEngine.getInstance().resetDatabaseEngine();
+    DatabaseEngineFactory.getCurrent().reset();
     // clean wal
     MultiFileLogNodeManager.getInstance().stop();
-    // clean cache
-    TsFileMetaDataCache.getInstance().clear();
-    RowGroupBlockMetaDataCache.getInstance().clear();
     // close metadata
     MManager.getInstance().clear();
     MManager.getInstance().flushObjectToFile();
     // delete all directory
     cleanAllDir();
-    // DatabaseEngine.getInstance().reset();
+    // DatabaseEngineFactory.getCurrent().reset();
     // reset MemController
     BasicMemController.getInstance().close();
   }
@@ -107,7 +99,7 @@ public class EnvironmentUtils {
       cleanDir(path);
     }
     // delete filenode
-    cleanDir(config.getFileNodeDir());
+    cleanDir(config.getStorageGroupDir());
     // delete metadata
     cleanDir(config.getMetadataDir());
     // delete wal
@@ -116,13 +108,13 @@ public class EnvironmentUtils {
     cleanDir(config.getDerbyHome());
     // delete index
     cleanDir(config.getIndexFileDir());
-    // delte data
+    // delete data
     cleanDir("data");
-    // delte derby log
+    // delete derby log
     // cleanDir("derby.log");
   }
 
-  public static void cleanDir(String dir) throws IOException {
+  private static void cleanDir(String dir) throws IOException {
     File file = new File(dir);
     if (file.exists()) {
       if (file.isDirectory()) {
@@ -157,7 +149,7 @@ public class EnvironmentUtils {
     config.setEnableMemMonitor(false);
     // disable the system monitor
     config.setEnableStatMonitor(false);
-    IAuthorizer authorizer = null;
+    IAuthorizer authorizer;
     try {
       authorizer = LocalFileAuthorizer.getInstance();
     } catch (AuthException e) {
@@ -168,7 +160,7 @@ public class EnvironmentUtils {
     } catch (AuthException e) {
       throw new StartupException(e.getMessage());
     }
-    DatabaseEngine.getInstance().resetDatabaseEngine();
+    DatabaseEngineFactory.getCurrent().reset();
     MultiFileLogNodeManager.getInstance().start();
     TEST_QUERY_JOB_ID = QueryResourceManager.getInstance().assignJobId();
     TEST_QUERY_CONTEXT = new QueryContext(TEST_QUERY_JOB_ID);

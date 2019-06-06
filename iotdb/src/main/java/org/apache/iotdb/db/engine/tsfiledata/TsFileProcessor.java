@@ -122,7 +122,7 @@ public class TsFileProcessor extends Processor {
 
   private List<TsFileResource> tsFileResources;
   // device -> datafiles
-  private Map<String, List<TsFileResource>> inverseIndexOfResource;
+  private Map<String, List<TsFileResource>> inverseIndexOfResource = new HashMap<>();
 
   // device -> min timestamp in current data file
   private Map<String, Long> minWrittenTimeForEachDeviceInCurrentFile;
@@ -555,7 +555,7 @@ public class TsFileProcessor extends Processor {
       result = true;
     } catch (Exception e) {
       LOGGER.error(
-          "The TsFile Processor {} failed to flush, when calling the afterFlushAction（filenodeFlushAction）.",
+          "The TsFile Processor {} failed to flush.",
           processorName, e);
       result = false;
     } finally {
@@ -794,6 +794,9 @@ public class TsFileProcessor extends Processor {
 
   @Override
   public void close() throws TsFileProcessorException {
+    if (isClosed) {
+      return;
+    }
     closeCurrentFile();
     try {
       if (currentResource != null) {
@@ -959,6 +962,10 @@ public class TsFileProcessor extends Processor {
     return fileSize;
   }
 
+  public long currentFileSize() {
+    return currentResource != null ? currentResource.getFile().length() : 0;
+  }
+
   public List<TsFileResource> getTsFileResources() {
     return tsFileResources;
   }
@@ -987,5 +994,9 @@ public class TsFileProcessor extends Processor {
       }
     }
     tsFileResources = newFiles;
+  }
+
+  public long getMetaSize() {
+    return writer.getMetaSize();
   }
 }

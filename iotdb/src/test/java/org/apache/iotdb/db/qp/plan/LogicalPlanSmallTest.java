@@ -27,7 +27,7 @@ import org.apache.iotdb.db.exception.qp.LogicalOptimizeException;
 import org.apache.iotdb.db.exception.qp.QueryProcessorException;
 import org.apache.iotdb.db.qp.logical.RootOperator;
 import org.apache.iotdb.db.qp.logical.crud.QueryOperator;
-import org.apache.iotdb.db.qp.logical.crud.SFWOperator;
+import org.apache.iotdb.db.qp.physical.crud.InsertPlan;
 import org.apache.iotdb.db.qp.strategy.LogicalGenerator;
 import org.apache.iotdb.db.qp.strategy.optimizer.ConcatPathOptimizer;
 import org.apache.iotdb.db.qp.utils.MemIntQpExecutor;
@@ -66,7 +66,7 @@ public class LogicalPlanSmallTest {
     AstNode astNode = ParseUtils.findRootNonNullToken(astTree);
     RootOperator operator = generator.getLogicalPlan(astNode);
     Assert.assertEquals(operator.getClass(), QueryOperator.class);
-    Assert.assertEquals(((QueryOperator) operator).getSeriesLimit(), 10);
+    Assert.assertEquals(10, ((QueryOperator) operator).getSeriesLimit());
   }
 
   @Test(expected = LogicalOperatorException.class)
@@ -81,7 +81,7 @@ public class LogicalPlanSmallTest {
           "parsing error,statement: " + sqlStr + " .message:" + e.getMessage());
     }
     AstNode astNode = ParseUtils.findRootNonNullToken(astTree);
-    RootOperator operator = generator.getLogicalPlan(astNode);
+    generator.getLogicalPlan(astNode);
     // expected to throw LogicalOperatorException: SLIMIT <SN>: SN should be Int32.
   }
 
@@ -97,7 +97,7 @@ public class LogicalPlanSmallTest {
           "parsing error,statement: " + sqlStr + " .message:" + e.getMessage());
     }
     AstNode astNode = ParseUtils.findRootNonNullToken(astTree);
-    RootOperator operator = generator.getLogicalPlan(astNode);
+    generator.getLogicalPlan(astNode);
     // expected to throw LogicalOperatorException: SLIMIT <SN>: SN must be a positive integer and can not be zero.
   }
 
@@ -115,8 +115,8 @@ public class LogicalPlanSmallTest {
     AstNode astNode = ParseUtils.findRootNonNullToken(astTree);
     RootOperator operator = generator.getLogicalPlan(astNode);
     Assert.assertEquals(operator.getClass(), QueryOperator.class);
-    Assert.assertEquals(((QueryOperator) operator).getSeriesLimit(), 10);
-    Assert.assertEquals(((QueryOperator) operator).getSeriesOffset(), 1);
+    Assert.assertEquals(10, ((QueryOperator) operator).getSeriesLimit());
+    Assert.assertEquals(1, ((QueryOperator) operator).getSeriesOffset());
   }
 
   @Test(expected = LogicalOptimizeException.class)
@@ -146,12 +146,12 @@ public class LogicalPlanSmallTest {
     Path path4 = new Path(
         new StringContainer(new String[]{"root", "vehicle", "d4", "s1"},
             SystemConstant.PATH_SEPARATOR));
-    executor.insert(path1, 10, "10");
-    executor.insert(path2, 10, "10");
-    executor.insert(path3, 10, "10");
-    executor.insert(path4, 10, "10");
+    executor.insert(new InsertPlan(path1.getDevice(), 10, path1.getMeasurement(), "10"));
+    executor.insert(new InsertPlan(path2.getDevice(), 10, path2.getMeasurement(), "10"));
+    executor.insert(new InsertPlan(path3.getDevice(), 10, path3.getMeasurement(), "10"));
+    executor.insert(new InsertPlan(path4.getDevice(), 10, path4.getMeasurement(), "10"));
     ConcatPathOptimizer concatPathOptimizer = new ConcatPathOptimizer(executor);
-    operator = (SFWOperator) concatPathOptimizer.transform(operator);
+    concatPathOptimizer.transform(operator);
     // expected to throw LogicalOptimizeException: Wrong use of SLIMIT: SLIMIT is not allowed to be used with
     // complete paths.
   }
@@ -168,7 +168,7 @@ public class LogicalPlanSmallTest {
           "parsing error,statement: " + sqlStr + " .message:" + e.getMessage());
     }
     AstNode astNode = ParseUtils.findRootNonNullToken(astTree);
-    RootOperator operator = generator.getLogicalPlan(astNode);
+    generator.getLogicalPlan(astNode);
     // expected to throw LogicalOperatorException: LIMIT <N>: N should be Int32.
   }
 
@@ -184,7 +184,7 @@ public class LogicalPlanSmallTest {
           "parsing error,statement: " + sqlStr + " .message:" + e.getMessage());
     }
     AstNode astNode = ParseUtils.findRootNonNullToken(astTree);
-    RootOperator operator = generator.getLogicalPlan(astNode);
+    generator.getLogicalPlan(astNode);
     // expected to throw LogicalOperatorException: LIMIT <N>: N must be a positive integer and can not be zero.
   }
 

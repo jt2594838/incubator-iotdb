@@ -24,7 +24,6 @@ import static junit.framework.TestCase.assertTrue;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.Arrays;
 import java.util.zip.CRC32;
 import org.apache.iotdb.db.conf.IoTDBConfig;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
@@ -64,15 +63,12 @@ public class WriteLogNodeTest {
   public void testWriteLogAndSync() throws IOException {
     // this test uses a dummy write log node to write a few logs and flushes them
     // then reads the logs from file
-    File tempRestore = new File("testtemp", "restore");
-    File tempProcessorStore = new File("testtemp", "processorStore");
+    File tempRestore = new File("testTemp", "restore");
     tempRestore.getParentFile().mkdirs();
     tempRestore.createNewFile();
-    tempProcessorStore.createNewFile();
     CRC32 crc32 = new CRC32();
 
-    WriteLogNode logNode = new ExclusiveWriteLogNode("root.logTestDevice", tempRestore.getPath(),
-        tempProcessorStore.getPath());
+    WriteLogNode logNode = new ExclusiveWriteLogNode("root.logTestDevice", tempRestore.getPath());
 
     InsertPlan bwInsertPlan = new InsertPlan(1, "root.logTestDevice", 100,
         new String[]{"s1", "s2", "s3", "s4"},
@@ -92,7 +88,7 @@ public class WriteLogNodeTest {
 
     RandomAccessFile raf = new RandomAccessFile(walFile, "r");
     byte[] buffer = new byte[10 * 1024 * 1024];
-    int logSize = 0;
+    int logSize;
     logSize = raf.readInt();
     long checksum = raf.readLong();
     raf.read(buffer, 0, logSize);
@@ -131,7 +127,6 @@ public class WriteLogNodeTest {
     raf.close();
     logNode.delete();
     tempRestore.delete();
-    tempProcessorStore.delete();
     tempRestore.getParentFile().delete();
   }
 
@@ -139,14 +134,11 @@ public class WriteLogNodeTest {
   public void testNotifyFlush() throws IOException {
     // this test writes a few logs and sync them
     // then calls notifyStartFlush() and notifyEndFlush() to delete old file
-    File tempRestore = new File("testtemp", "restore");
-    File tempProcessorStore = new File("testtemp", "processorStore");
+    File tempRestore = new File("testTemp", "restore");
     tempRestore.getParentFile().mkdirs();
     tempRestore.createNewFile();
-    tempProcessorStore.createNewFile();
 
-    WriteLogNode logNode = new ExclusiveWriteLogNode("root.logTestDevice", tempRestore.getPath(),
-        tempProcessorStore.getPath());
+    WriteLogNode logNode = new ExclusiveWriteLogNode("root.logTestDevice", tempRestore.getPath());
 
     InsertPlan bwInsertPlan = new InsertPlan(1, "root.logTestDevice", 100,
         new String[]{"s1", "s2", "s3", "s4"},
@@ -176,7 +168,6 @@ public class WriteLogNodeTest {
 
     logNode.delete();
     tempRestore.delete();
-    tempProcessorStore.delete();
     tempRestore.getParentFile().delete();
   }
 
@@ -185,14 +176,11 @@ public class WriteLogNodeTest {
     // this test checks that if more logs than threshold are written, a sync will be triggered.
     int flushWalThreshold = config.getFlushWalThreshold();
     config.setFlushWalThreshold(3);
-    File tempRestore = new File("testtemp", "restore");
-    File tempProcessorStore = new File("testtemp", "processorStore");
+    File tempRestore = new File("testTemp", "restore");
     tempRestore.getParentFile().mkdirs();
     tempRestore.createNewFile();
-    tempProcessorStore.createNewFile();
 
-    WriteLogNode logNode = new ExclusiveWriteLogNode("root.logTestDevice", tempRestore.getPath(),
-        tempProcessorStore.getPath());
+    WriteLogNode logNode = new ExclusiveWriteLogNode("root.logTestDevice", tempRestore.getPath());
 
     InsertPlan bwInsertPlan = new InsertPlan(1, "root.logTestDevice", 100,
         new String[]{"s1", "s2", "s3", "s4"},
@@ -212,7 +200,6 @@ public class WriteLogNodeTest {
 
     logNode.delete();
     tempRestore.delete();
-    tempProcessorStore.delete();
     config.setFlushWalThreshold(flushWalThreshold);
     tempRestore.getParentFile().delete();
   }
@@ -221,14 +208,11 @@ public class WriteLogNodeTest {
   public void testDelete() throws IOException {
     // this test uses a dummy write log node to write a few logs and flushes them
     // then deletes the node
-    File tempRestore = new File("testtemp", "restore");
-    File tempProcessorStore = new File("testtemp", "processorStore");
+    File tempRestore = new File("testTemp", "restore");
     tempRestore.getParentFile().mkdirs();
     tempRestore.createNewFile();
-    tempProcessorStore.createNewFile();
 
-    WriteLogNode logNode = new ExclusiveWriteLogNode("root.logTestDevice", tempRestore.getPath(),
-        tempProcessorStore.getPath());
+    WriteLogNode logNode = new ExclusiveWriteLogNode("root.logTestDevice", tempRestore.getPath());
 
     InsertPlan bwInsertPlan = new InsertPlan(1, "logTestDevice", 100,
         new String[]{"s1", "s2", "s3", "s4"},
@@ -251,22 +235,18 @@ public class WriteLogNodeTest {
     assertTrue(!new File(logNode.getLogDirectory()).exists());
 
     tempRestore.delete();
-    tempProcessorStore.delete();
     tempRestore.getParentFile().delete();
   }
 
   @Test
   public void testOverSizedWAL() throws IOException {
     // this test uses a dummy write log node to write an over-sized log and assert exception caught
-    File tempRestore = new File("testtemp", "restore");
-    File tempProcessorStore = new File("testtemp", "processorStore");
+    File tempRestore = new File("testTemp", "restore");
     tempRestore.getParentFile().mkdirs();
     tempRestore.createNewFile();
-    tempProcessorStore.createNewFile();
 
     WriteLogNode logNode = new ExclusiveWriteLogNode("root.logTestDevice.oversize",
-        tempRestore.getPath(),
-        tempProcessorStore.getPath());
+        tempRestore.getPath());
 
     InsertPlan bwInsertPlan = new InsertPlan(1, "root.logTestDevice.oversize", 100,
         new String[]{"s1", "s2", "s3", "s4"},
@@ -282,7 +262,6 @@ public class WriteLogNodeTest {
 
     logNode.delete();
     tempRestore.delete();
-    tempProcessorStore.delete();
     tempRestore.getParentFile().delete();
   }
 }

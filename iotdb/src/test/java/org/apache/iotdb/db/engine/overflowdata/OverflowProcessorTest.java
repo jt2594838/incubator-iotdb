@@ -20,26 +20,24 @@
 package org.apache.iotdb.db.engine.overflowdata;
 
 import static org.apache.iotdb.db.utils.EnvironmentUtils.TEST_QUERY_CONTEXT;
+import static org.apache.iotdb.db.utils.EnvironmentUtils.cleanEnv;
+import static org.apache.iotdb.db.utils.EnvironmentUtils.envSetUp;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
+import org.apache.iotdb.db.engine.datasource.SeriesDataSource;
 import org.apache.iotdb.db.engine.sgmanager.OperationResult;
 import org.apache.iotdb.db.engine.tsfiledata.TsFileProcessorTest;
 import org.apache.iotdb.db.engine.version.SysTimeVersionController;
-import org.apache.iotdb.db.exception.BufferWriteProcessorException;
-import org.apache.iotdb.db.exception.StorageGroupManagerException;
-import org.apache.iotdb.db.exception.FileNodeProcessorException;
-import org.apache.iotdb.db.exception.MetadataArgsErrorException;
-import org.apache.iotdb.db.exception.PathErrorException;
+import org.apache.iotdb.db.exception.TsFileProcessorException;
 import org.apache.iotdb.db.qp.physical.crud.InsertPlan;
+import org.apache.iotdb.db.query.reader.sequence.SequenceDataReader;
 import org.apache.iotdb.db.utils.ImmediateFuture;
+import org.apache.iotdb.tsfile.read.common.BatchData;
 import org.apache.iotdb.tsfile.read.common.Path;
-import org.apache.iotdb.tsfile.read.common.RowRecord;
-import org.apache.iotdb.tsfile.read.expression.QueryExpression;
-import org.apache.iotdb.tsfile.read.query.dataset.QueryDataSet;
+import org.apache.iotdb.tsfile.read.expression.impl.SingleSeriesExpression;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -51,19 +49,20 @@ public class OverflowProcessorTest extends TsFileProcessorTest {
     IoTDBDescriptor.getInstance().getConfig().setEnableWal(true);
     super.setUp();
     processor.close();
-    processor = new OverflowProcessor("root.test", doNothingAction, doNothingAction, doNothingAction,
-        SysTimeVersionController.INSTANCE, schema);
-
+    processor = new OverflowProcessor("root.test", SysTimeVersionController.INSTANCE,
+        schema);
   }
 
   @After
   public void tearDown() throws Exception {
     super.tearDown();
+    cleanEnv();
   }
 
   @Test
   public void insert()
-      throws BufferWriteProcessorException, IOException, ExecutionException, InterruptedException, FileNodeProcessorException, StorageGroupManagerException, PathErrorException, MetadataArgsErrorException {
+      throws IOException, ExecutionException, InterruptedException,
+      TsFileProcessorException {
     String[] s1 = new String[]{"s1"};
     String[] s2 = new String[]{"s2"};
     String[] value = new String[]{"5.0"};
@@ -100,12 +99,16 @@ public class OverflowProcessorTest extends TsFileProcessorTest {
     processor.delete("root.test.d1", "s1", 8);
     processor.delete("root.test.d3", "s1", 8);
 
-    QueryExpression qe = QueryExpression.create(
-        Collections.singletonList(new Path("root.test.d1", "s1")), null);
-    QueryDataSet result = queryManager.query(qe, processor, TEST_QUERY_CONTEXT);
-    while (result.hasNext()) {
-      RowRecord record = result.next();
-      System.out.println(record.getTimestamp() + "," + record.getFields().get(0).getFloatV());
+    SingleSeriesExpression singleSeriesExpression = new SingleSeriesExpression(
+        new Path("root.test.d1", "s1"), null);
+    SeriesDataSource dataSource = processor.query(singleSeriesExpression, TEST_QUERY_CONTEXT);
+    SequenceDataReader dataReader = new SequenceDataReader(dataSource, null, TEST_QUERY_CONTEXT);
+    while (dataReader.hasNext()) {
+      BatchData batch = dataReader.nextBatch();
+      while (batch.hasNext()) {
+        System.out.println(batch.currentTime() +"," + batch.getFloat());
+        batch.next();
+      }
     }
   }
 

@@ -25,6 +25,7 @@ import org.apache.iotdb.db.engine.sgmanager.TsFileResource;
 import org.apache.iotdb.db.engine.memcontrol.BasicMemController;
 import org.apache.iotdb.db.engine.datasource.QueryDataSource;
 import org.apache.iotdb.db.exception.StorageGroupManagerException;
+import org.apache.iotdb.db.monitor.IStatistic;
 import org.apache.iotdb.db.qp.physical.crud.InsertPlan;
 import org.apache.iotdb.db.query.context.QueryContext;
 import org.apache.iotdb.db.service.IService;
@@ -37,7 +38,7 @@ import org.apache.iotdb.tsfile.read.expression.impl.SingleSeriesExpression;
 /**
  * DatabaseEngine is an abstraction of IoTDB storage-level interfaces.
  */
-public interface DatabaseEngine extends IService {
+public interface DatabaseEngine extends IService, IStatistic {
 
   /**
    * This function is just for unit test.

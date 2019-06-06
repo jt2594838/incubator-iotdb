@@ -22,8 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import org.apache.iotdb.db.conf.IoTDBConfig;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
-import org.apache.iotdb.db.exception.StorageGroupManagerException;
-import org.apache.iotdb.db.exception.MetadataArgsErrorException;
 import org.apache.iotdb.db.exception.PathErrorException;
 import org.apache.iotdb.db.exception.RecoverException;
 import org.apache.iotdb.db.metadata.MManager;
@@ -34,8 +32,6 @@ import org.apache.iotdb.db.utils.EnvironmentUtils;
 import org.apache.iotdb.db.writelog.node.ExclusiveWriteLogNode;
 import org.apache.iotdb.db.writelog.node.WriteLogNode;
 import org.apache.iotdb.db.writelog.transfer.PhysicalPlanLogTransfer;
-import org.apache.iotdb.tsfile.common.conf.TSFileConfig;
-import org.apache.iotdb.tsfile.common.conf.TSFileDescriptor;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSEncoding;
 import org.apache.iotdb.tsfile.read.common.Path;
@@ -47,7 +43,6 @@ import org.junit.Test;
 public class PerformanceTest {
 
   private IoTDBConfig config = IoTDBDescriptor.getInstance().getConfig();
-  private TSFileConfig fileConfig = TSFileDescriptor.getInstance().getConfig();
 
   private boolean enableWal;
   private boolean skip = true;
@@ -75,19 +70,16 @@ public class PerformanceTest {
     long[] forceCycle = new long[]{10, 0};
     int oldBatchSize = config.getFlushWalThreshold();
     long oldForceCycle = config.getForceWalPeriodInMs();
-    for (int j = 0; j < batchSizes.length; j++) {
-      for (int k = 0; k < forceCycle.length; k++) {
-        config.setFlushWalThreshold(batchSizes[j]);
-        config.setForceWalPeriodInMs(forceCycle[k]);
-        File tempRestore = new File("testtemp", "restore");
-        File tempProcessorStore = new File("testtemp", "processorStore");
+    for (int batchSize : batchSizes) {
+      for (long l : forceCycle) {
+        config.setFlushWalThreshold(batchSize);
+        config.setForceWalPeriodInMs(l);
+        File tempRestore = new File("testTemp", "restore");
         tempRestore.getParentFile().mkdirs();
         tempRestore.createNewFile();
-        tempProcessorStore.createNewFile();
 
         WriteLogNode logNode = new ExclusiveWriteLogNode("root.testLogNode",
-            tempRestore.getPath(),
-            tempProcessorStore.getPath());
+            tempRestore.getPath());
 
         long time = System.currentTimeMillis();
         for (int i = 0; i < 1000000; i++) {
@@ -111,7 +103,6 @@ public class PerformanceTest {
 
         logNode.delete();
         tempRestore.delete();
-        tempProcessorStore.delete();
         tempRestore.getParentFile().delete();
       }
     }
@@ -121,17 +112,14 @@ public class PerformanceTest {
 
   @Test
   public void recoverTest()
-      throws IOException, RecoverException, StorageGroupManagerException, PathErrorException,
-      MetadataArgsErrorException {
+      throws IOException, RecoverException, PathErrorException {
     // this test write 1000000 * 3 logs , recover from them and report elapsed time
     if (skip) {
       return;
     }
-    File tempRestore = new File("testtemp", "restore");
-    File tempProcessorStore = new File("testtemp", "processorStore");
+    File tempRestore = new File("testTemp", "restore");
     tempRestore.getParentFile().mkdirs();
     tempRestore.createNewFile();
-    tempProcessorStore.createNewFile();
 
     try {
       MManager.getInstance().setStorageLevelToMTree("root.logTestDevice");
@@ -149,8 +137,7 @@ public class PerformanceTest {
     MManager.getInstance().addPathToMTree("root.logTestDevice.s4", TSDataType.BOOLEAN.name(),
         TSEncoding.PLAIN.name());
     WriteLogNode logNode = new ExclusiveWriteLogNode("root.logTestDevice",
-        tempRestore.getPath(),
-        tempProcessorStore.getPath());
+        tempRestore.getPath());
 
     for (int i = 0; i < 1000000; i++) {
       InsertPlan bwInsertPlan = new InsertPlan(1, "root.logTestDevice", 100,
@@ -172,7 +159,6 @@ public class PerformanceTest {
     } finally {
       logNode.delete();
       tempRestore.delete();
-      tempProcessorStore.delete();
       tempRestore.getParentFile().delete();
     }
   }
@@ -193,7 +179,7 @@ public class PerformanceTest {
     UpdatePlan updatePlan = new UpdatePlan(0, 100, "2.0",
         new Path("root.logTestDevice.s1"));
     for (int i = 0; i < 20; i++) {
-      updatePlan.addInterval(new Pair<Long, Long>(200l, 300l));
+      updatePlan.addInterval(new Pair<>(200L, 300L));
     }
 
     DeletePlan deletePlan = new DeletePlan(50, new Path("root.logTestDevice.s1"));
@@ -206,9 +192,9 @@ public class PerformanceTest {
 
     time = System.currentTimeMillis();
     for (int i = 0; i < 1000000; i++) {
-      bwInsertPlan = (InsertPlan) PhysicalPlanLogTransfer.logToOperator(bytes1);
-      updatePlan = (UpdatePlan) PhysicalPlanLogTransfer.logToOperator(bytes2);
-      deletePlan = (DeletePlan) PhysicalPlanLogTransfer.logToOperator(bytes3);
+      PhysicalPlanLogTransfer.logToOperator(bytes1);
+      PhysicalPlanLogTransfer.logToOperator(bytes2);
+      PhysicalPlanLogTransfer.logToOperator(bytes3);
     }
     System.out.println("3000000 logs decoding use " + (System.currentTimeMillis() - time) + "ms");
   }
@@ -222,13 +208,13 @@ public class PerformanceTest {
         new String[]{"1.0", "15", "str", "false"});
     long time = System.currentTimeMillis();
     for (int i = 0; i < 1000000; i++) {
-      byte[] bytes = PhysicalPlanLogTransfer.operatorToLog(bwInsertPlan);
+       PhysicalPlanLogTransfer.operatorToLog(bwInsertPlan);
     }
     System.out.println("1000000 logs encoding use " + (System.currentTimeMillis() - time) + "ms");
 
     time = System.currentTimeMillis();
     for (int i = 0; i < 1000000; i++) {
-      byte[] bytes = sql.getBytes();
+       sql.getBytes();
     }
     System.out.println("1000000 sqls encoding use " + (System.currentTimeMillis() - time) + "ms");
   }

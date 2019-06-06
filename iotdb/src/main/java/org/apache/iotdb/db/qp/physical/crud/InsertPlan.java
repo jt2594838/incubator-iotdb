@@ -37,6 +37,10 @@ public class InsertPlan extends PhysicalPlan {
   // 1 : BufferWrite Insert 2 : Overflow Insert
   private int insertType;
 
+  public InsertPlan(String deviceId, long insertTime, String measurement, String value) {
+    this(deviceId, insertTime, new String[]{measurement}, new String[]{value});
+  }
+
   public InsertPlan(String deviceId, long insertTime, String[] measurementList,
       String[] insertValues) {
     super(false, Operator.OperatorType.INSERT);

@@ -177,7 +177,7 @@ public abstract class QueryProcessExecutor {
    *
    * @param plan the InsertPlan
    */
-  public abstract void multiInsert(InsertPlan plan) throws ProcessorException;
+  public abstract void insert(InsertPlan plan) throws ProcessorException;
 
   public abstract List<String> getAllPaths(String originPath) throws PathErrorException;
 

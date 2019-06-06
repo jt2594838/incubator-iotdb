@@ -143,6 +143,7 @@ public class FileReaderManager implements IService {
       return tsFileReader;
     }
 
+
     return readerMap.get(filePath);
   }
 

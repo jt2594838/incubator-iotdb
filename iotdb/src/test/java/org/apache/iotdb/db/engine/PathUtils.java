@@ -51,7 +51,7 @@ public class PathUtils {
   }
 
   public static File getFileNodeDir(String nameSpacePath) {
-    String filenodeDir = config.getFileNodeDir();
+    String filenodeDir = config.getStorageGroupDir();
     if (filenodeDir.length() > 0
         && filenodeDir.charAt(filenodeDir.length() - 1) != File.separatorChar) {
       filenodeDir = filenodeDir + File.separatorChar;

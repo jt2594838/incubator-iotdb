@@ -88,9 +88,9 @@ public class IoTDBConfig {
   private String[] overflowDataDirs = {DEFAULT_OVERFLOW_DIR};
 
   /**
-   * Data directory of fileNode data.
+   * Data directory of StorageGroup data.
    */
-  private String fileNodeDir = "info";
+  private String storageGroupDir = "info";
 
   /**
    * Data directory of bufferWrite data.
@@ -332,7 +332,7 @@ public class IoTDBConfig {
     if (getSysDir().length() > 0 && !getSysDir().endsWith(File.separator)) {
       setSysDir(getSysDir() + File.separatorChar);
     }
-    setFileNodeDir(getSysDir() + getFileNodeDir());
+    setStorageGroupDir(getSysDir() + getStorageGroupDir());
     setMetadataDir(getSysDir() + getMetadataDir());
 
     // update the paths of subdirectories in the walDir
@@ -514,12 +514,12 @@ public class IoTDBConfig {
     this.overflowDataDirs = overflowDataDirs;
   }
 
-  public String getFileNodeDir() {
-    return fileNodeDir;
+  public String getStorageGroupDir() {
+    return storageGroupDir;
   }
 
-  public void setFileNodeDir(String fileNodeDir) {
-    this.fileNodeDir = fileNodeDir;
+  public void setStorageGroupDir(String storageGroupDir) {
+    this.storageGroupDir = storageGroupDir;
   }
 
   public void setBufferWriteDirs(String[] bufferWriteDirs) {

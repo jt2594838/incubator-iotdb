@@ -19,6 +19,8 @@
 
 package org.apache.iotdb.db.query.reader.sequence;
 
+import static org.apache.iotdb.db.utils.QueryUtils.queryChunks;
+
 import java.io.IOException;
 import java.util.List;
 import org.apache.iotdb.db.engine.sgmanager.TsFileResource;
@@ -34,6 +36,7 @@ import org.apache.iotdb.tsfile.read.controller.ChunkLoader;
 import org.apache.iotdb.tsfile.read.controller.ChunkLoaderImpl;
 import org.apache.iotdb.tsfile.read.controller.MetadataQuerierByFileImpl;
 import org.apache.iotdb.tsfile.read.reader.series.SeriesReaderByTimestamp;
+import org.apache.iotdb.tsfile.utils.Pair;
 
 public class SealedTsFilesReaderByTimestamp implements EngineReaderByTimeStamp {
 
@@ -116,21 +119,8 @@ public class SealedTsFilesReaderByTimestamp implements EngineReaderByTimeStamp {
       throws IOException {
 
     // to avoid too many opened files
-    TsFileSequenceReader tsFileReader = FileReaderManager.getInstance()
-        .get(fileNode.getFilePath(), true);
-
-    MetadataQuerierByFileImpl metadataQuerier = new MetadataQuerierByFileImpl(tsFileReader);
-    List<ChunkMetaData> metaDataList = metadataQuerier.getChunkMetaDataList(seriesPath);
-
-    List<Modification> pathModifications = context.getPathModifications(fileNode.getModFile(),
-        seriesPath.getFullPath());
-    if (!pathModifications.isEmpty()) {
-      QueryUtils.modifyChunkMetaData(metaDataList, pathModifications);
-    }
-    ChunkLoader chunkLoader = new ChunkLoaderImpl(tsFileReader);
-
-    seriesReader = new SeriesReaderByTimestamp(chunkLoader, metaDataList);
-
+    Pair<ChunkLoader, List<ChunkMetaData>> chunkRst = queryChunks(fileNode, seriesPath, context);
+    seriesReader = new SeriesReaderByTimestamp(chunkRst.left, chunkRst.right);
   }
 
 }

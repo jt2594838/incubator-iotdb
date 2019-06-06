@@ -18,72 +18,39 @@
  */
 package org.apache.iotdb.db.engine.memcontrol;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.iotdb.db.conf.IoTDBConfig;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
-import org.apache.iotdb.db.conf.directories.Directories;
 import org.apache.iotdb.db.engine.MetadataManagerHelper;
 import org.apache.iotdb.db.engine.PathUtils;
-import org.apache.iotdb.db.engine.bufferwrite.Action;
-import org.apache.iotdb.db.engine.bufferwrite.ActionException;
-import org.apache.iotdb.db.engine.bufferwrite.BufferWriteProcessor;
-import org.apache.iotdb.db.engine.EngineConstants;
+import org.apache.iotdb.db.engine.tsfiledata.TsFileProcessor;
 import org.apache.iotdb.db.engine.version.SysTimeVersionController;
-import org.apache.iotdb.db.exception.BufferWriteProcessorException;
+import org.apache.iotdb.db.exception.TsFileProcessorException;
+import org.apache.iotdb.db.qp.physical.crud.InsertPlan;
 import org.apache.iotdb.db.utils.EnvironmentUtils;
 import org.apache.iotdb.db.utils.FileSchemaUtils;
 import org.apache.iotdb.db.utils.MemUtils;
 import org.apache.iotdb.tsfile.common.conf.TSFileConfig;
-import org.apache.iotdb.tsfile.common.conf.TSFileDescriptor;
 import org.apache.iotdb.tsfile.exception.write.WriteProcessException;
-import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class BufferwriteFileSizeControlTest {
+public class TsFileSizeControlTest {
 
-  Action bfflushaction = new Action() {
+  private TsFileProcessor processor = null;
+  private String nsp = "root.vehicle.d0";
+  private String nsp2 = "root.vehicle.d1";
 
-    @Override
-    public void act() throws ActionException {
-
-    }
-  };
-
-  Action bfcloseaction = new Action() {
-
-    @Override
-    public void act() throws ActionException {
-    }
-  };
-
-  Action fnflushaction = new Action() {
-
-    @Override
-    public void act() throws ActionException {
-
-    }
-  };
-
-  BufferWriteProcessor processor = null;
-  String nsp = "root.vehicle.d0";
-  String nsp2 = "root.vehicle.d1";
-
-  private boolean cachePageData = false;
   private int groupSizeInByte;
   private int pageCheckSizeThreshold;
   private int pageSizeInByte;
   private int maxStringLength;
   private long fileSizeThreshold;
   private long memMonitorInterval;
-  private TSFileConfig TsFileConf = TSFileDescriptor.getInstance().getConfig();
   private IoTDBConfig dbConfig = IoTDBDescriptor.getInstance().getConfig();
 
   private boolean skip = !false;
@@ -91,17 +58,17 @@ public class BufferwriteFileSizeControlTest {
   @Before
   public void setUp() throws Exception {
     // origin value
-    groupSizeInByte = TsFileConf.groupSizeInByte;
-    pageCheckSizeThreshold = TsFileConf.pageCheckSizeThreshold;
-    pageSizeInByte = TsFileConf.pageSizeInByte;
-    maxStringLength = TsFileConf.maxStringLength;
+    groupSizeInByte = TSFileConfig.groupSizeInByte;
+    pageCheckSizeThreshold = TSFileConfig.pageCheckSizeThreshold;
+    pageSizeInByte = TSFileConfig.pageSizeInByte;
+    maxStringLength = TSFileConfig.maxStringLength;
     fileSizeThreshold = dbConfig.getBufferwriteFileSizeThreshold();
     memMonitorInterval = dbConfig.getMemMonitorInterval();
     // new value
-    TsFileConf.groupSizeInByte = 200000;
-    TsFileConf.pageCheckSizeThreshold = 3;
-    TsFileConf.pageSizeInByte = 10000;
-    TsFileConf.maxStringLength = 2;
+    TSFileConfig.groupSizeInByte = 200000;
+    TSFileConfig.pageCheckSizeThreshold = 3;
+    TSFileConfig.pageSizeInByte = 10000;
+    TSFileConfig.maxStringLength = 2;
     dbConfig.setBufferwriteFileSizeThreshold(5 * 1024 * 1024);
     BasicMemController.getInstance().setCheckInterval(600 * 1000);
     // init metadata
@@ -111,10 +78,10 @@ public class BufferwriteFileSizeControlTest {
   @After
   public void tearDown() throws Exception {
     // recovery value
-    TsFileConf.groupSizeInByte = groupSizeInByte;
-    TsFileConf.pageCheckSizeThreshold = pageCheckSizeThreshold;
-    TsFileConf.pageSizeInByte = pageSizeInByte;
-    TsFileConf.maxStringLength = maxStringLength;
+    TSFileConfig.groupSizeInByte = groupSizeInByte;
+    TSFileConfig.pageCheckSizeThreshold = pageCheckSizeThreshold;
+    TSFileConfig.pageSizeInByte = pageSizeInByte;
+    TSFileConfig.maxStringLength = maxStringLength;
     dbConfig.setBufferwriteFileSizeThreshold(fileSizeThreshold);
     BasicMemController.getInstance().setCheckInterval(memMonitorInterval);
     // clean environment
@@ -122,33 +89,28 @@ public class BufferwriteFileSizeControlTest {
   }
 
   @Test
-  public void test() throws BufferWriteProcessorException, WriteProcessException {
+  public void test() throws WriteProcessException, TsFileProcessorException {
     if (skip) {
       return;
     }
     String filename = "bufferwritetest";
+    //noinspection ResultOfMethodCallIgnored
     new File(filename).delete();
 
-    Map<String, Action> parameters = new HashMap<>();
-    parameters.put(EngineConstants.BUFFERWRITE_FLUSH_ACTION, bfflushaction);
-    parameters.put(EngineConstants.BUFFERWRITE_CLOSE_ACTION, bfcloseaction);
-    parameters.put(EngineConstants.FILENODE_PROCESSOR_FLUSH_ACTION, fnflushaction);
-
     try {
-      processor = new BufferWriteProcessor(Directories.getInstance().getTsFolderForTest(), nsp,
-          filename,
-          parameters, SysTimeVersionController.INSTANCE, FileSchemaUtils.constructFileSchema(nsp));
-    } catch (BufferWriteProcessorException e) {
+      processor = new TsFileProcessor(nsp, SysTimeVersionController.INSTANCE,
+          FileSchemaUtils.constructFileSchema(nsp));
+    } catch (TsFileProcessorException e) {
       e.printStackTrace();
       fail(e.getMessage());
     }
     File nspdir = PathUtils.getBufferWriteDir(nsp);
-    assertEquals(true, nspdir.isDirectory());
+    assertTrue(nspdir.isDirectory());
     for (int i = 0; i < 1000000; i++) {
-      processor.write(nsp, "s1", i * i, TSDataType.INT64, i + "");
-      processor.write(nsp2, "s1", i * i, TSDataType.INT64, i + "");
+      processor.insert(new InsertPlan(nsp,i * i, "s1", i + ""));
+      processor.insert(new InsertPlan(nsp2, i * i, "s1", i + ""));
       if (i % 100000 == 0) {
-        System.out.println(i + "," + MemUtils.bytesCntToStr(processor.getFileSize()));
+        System.out.println(i + "," + MemUtils.bytesCntToStr(processor.currentFileSize()));
       }
     }
     // wait to flush end
@@ -158,7 +120,7 @@ public class BufferwriteFileSizeControlTest {
       e.printStackTrace();
     }
     processor.close();
-    assertTrue(processor.getFileSize() < dbConfig.getBufferwriteFileSizeThreshold());
+    assertTrue(processor.currentFileSize() < dbConfig.getBufferwriteFileSizeThreshold());
     fail("Method unimplemented");
   }
 }

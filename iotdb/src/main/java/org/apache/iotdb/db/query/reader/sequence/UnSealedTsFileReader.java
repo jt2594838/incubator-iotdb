@@ -44,14 +44,14 @@ public class UnSealedTsFileReader implements IBatchReader, IAggregateReader {
   private FileSeriesReader unSealedReader;
 
   /**
-   * Construct funtion for UnSealedTsFileReader.
+   * Construct function for UnSealedTsFileReader.
    *
    * @param unsealedTsFile -param to initial
    * @param filter -filter
    * @param isReverse true-traverse chunks from behind forward; false-traverse chunks from front to
    * back;
    */
-  public UnSealedTsFileReader(UnsealedTsFile unsealedTsFile, Filter filter, boolean isReverse)
+  UnSealedTsFileReader(UnsealedTsFile unsealedTsFile, Filter filter, boolean isReverse)
       throws IOException {
 
     TsFileSequenceReader unClosedTsFileReader = FileReaderManager.getInstance()
@@ -78,10 +78,8 @@ public class UnSealedTsFileReader implements IBatchReader, IAggregateReader {
   }
 
   @Override
-  public void close() throws IOException {
-    if (unSealedReader != null) {
-      unSealedReader.close();
-    }
+  public void close() {
+    // do not close lower reader because it is shared
   }
 
   @Override

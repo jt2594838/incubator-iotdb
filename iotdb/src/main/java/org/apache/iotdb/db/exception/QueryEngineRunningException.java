@@ -16,30 +16,32 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.apache.iotdb.db.exception;
 
-import java.io.File;
-import java.util.Arrays;
-
 /**
- * once a TooManyChunksException is thrown, either enlarge the memory resource for queries, or begin
- * to merge the files in this exception.
+ * This Exception is the parent class for all query engine runtime exceptions.<br> This Exception
+ * extends super class {@link java.lang.RuntimeException}
+ *
+ * @author CGF
  */
-public class TooManyChunksException extends Exception {
+public abstract class QueryEngineRunningException extends RuntimeException {
 
-  File[] files;
+  private static final long serialVersionUID = 7537799061005397794L;
 
-  public TooManyChunksException(File[] files, String device, String measurment,
-      long numberOfWays) {
-    super(String.format(
-        "Files (%s) has too many Chunks for %s' %s, while query is only allocated %d Chunk spaces. Pls merge the OF file frist before you use it",
-        Arrays.toString(files), device, measurment, numberOfWays));
-    this.files = files;
+  public QueryEngineRunningException() {
+    super();
   }
 
-  public File[] getFiles() {
-    return files;
+  public QueryEngineRunningException(String message, Throwable cause) {
+    super(message, cause);
+  }
+
+  public QueryEngineRunningException(String message) {
+    super(message);
+  }
+
+  public QueryEngineRunningException(Throwable cause) {
+    super(cause);
   }
 
 }

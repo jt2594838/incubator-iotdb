@@ -260,7 +260,7 @@ public class OpenFileNumUtil {
     OVERFLOW_OPEN_FILE_NUM(directories.getAllOverflowFileFolders()),
     WAL_OPEN_FILE_NUM(Collections.singletonList(config.getWalFolder())),
     METADATA_OPEN_FILE_NUM(Collections.singletonList(config.getMetadataDir())),
-    DIGEST_OPEN_FILE_NUM(Collections.singletonList(config.getFileNodeDir())),
+    DIGEST_OPEN_FILE_NUM(Collections.singletonList(config.getStorageGroupDir())),
     SOCKET_OPEN_FILE_NUM(null);
 
     // path is a list of directory corresponding to the OpenFileNumStatistics enum element,

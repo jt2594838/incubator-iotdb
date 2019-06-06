@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.iotdb.db.engine.sgmanager.TsFileResource;
 import org.apache.iotdb.db.query.context.QueryContext;
+import org.apache.iotdb.db.query.control.FileReaderManager;
 import org.apache.iotdb.db.query.reader.IAggregateReader;
 import org.apache.iotdb.db.query.reader.IBatchReader;
 import org.apache.iotdb.db.utils.QueryUtils;
@@ -123,9 +124,6 @@ public class SealedTsFilesReader implements IBatchReader, IAggregateReader {
 
   private void initSingleTsFileReader(TsFileResource tsfile, QueryContext context)
       throws IOException {
-    if (seriesReader != null) {
-      seriesReader.close();
-    }
     seriesReader = QueryUtils.createTsFileReader(tsfile, context, seriesPath, isReverse, filter);
   }
 
@@ -135,10 +133,8 @@ public class SealedTsFilesReader implements IBatchReader, IAggregateReader {
   }
 
   @Override
-  public void close() throws IOException {
-    if (seriesReader != null) {
-      seriesReader.close();
-    }
+  public void close() {
+    // do not close lower reader because other thread may be using it
   }
 
   @Override
@@ -150,4 +146,5 @@ public class SealedTsFilesReader implements IBatchReader, IAggregateReader {
   public void skipPageData() {
     seriesReader.skipPageData();
   }
+
 }

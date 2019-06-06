@@ -22,6 +22,7 @@ package org.apache.iotdb.db.query.factory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.iotdb.db.engine.datasource.ReadOnlyMemChunk;
 import org.apache.iotdb.db.engine.sgmanager.TsFileResource;
 import org.apache.iotdb.db.engine.modification.Modification;
 import org.apache.iotdb.db.engine.modification.ModificationFile;
@@ -35,6 +36,7 @@ import org.apache.iotdb.db.query.control.QueryResourceManager;
 import org.apache.iotdb.db.query.reader.AllDataReader;
 import org.apache.iotdb.db.query.reader.IPointReader;
 import org.apache.iotdb.db.query.reader.IReader;
+import org.apache.iotdb.db.query.reader.mem.MemChunkReader;
 import org.apache.iotdb.db.query.reader.mem.MemChunkReaderByTimestamp;
 import org.apache.iotdb.db.query.reader.merge.EngineReaderByTimeStamp;
 import org.apache.iotdb.db.query.reader.merge.PriorityMergeReader;
@@ -48,6 +50,7 @@ import org.apache.iotdb.tsfile.file.metadata.ChunkMetaData;
 import org.apache.iotdb.tsfile.read.TsFileSequenceReader;
 import org.apache.iotdb.tsfile.read.common.Chunk;
 import org.apache.iotdb.tsfile.read.common.Path;
+import org.apache.iotdb.tsfile.read.controller.ChunkLoader;
 import org.apache.iotdb.tsfile.read.controller.ChunkLoaderImpl;
 import org.apache.iotdb.tsfile.read.controller.MetadataQuerier;
 import org.apache.iotdb.tsfile.read.controller.MetadataQuerierByFileImpl;
@@ -80,30 +83,54 @@ public class SeriesReaderFactory {
     int priorityValue = 1;
 
     for (TsFileResource overflowFile : overflowSeriesDataSource.getSealedFiles()) {
-
       TsFileSequenceReader tsFileSequenceReader = FileReaderManager.getInstance()
           .get(overflowFile.getFilePath(), true);
       ChunkLoaderImpl chunkLoader = new ChunkLoaderImpl(tsFileSequenceReader);
       List<ChunkMetaData> metaDataList = readFileChunkMetadata(tsFileSequenceReader, context,
           overflowSeriesDataSource.getSeriesPath(), overflowFile.getModFile());
 
-      for (ChunkMetaData chunkMetaData : metaDataList) {
-        Chunk chunk = chunkLoader.getChunk(chunkMetaData);
-        ChunkReader chunkReader;
-        if (filter == null) {
-          chunkReader = new ChunkReaderWithoutFilter(chunk);
-        } else {
-          chunkReader = new ChunkReaderWithFilter(chunk, filter);
-        }
+      priorityValue = createReadersForChunk(metaDataList, chunkLoader, filter, unSeqMergeReader,
+          tsFileSequenceReader, priorityValue);
+    }
+    if (overflowSeriesDataSource.hasUnsealedFile()) {
+      TsFileSequenceReader tsFileSequenceReader = FileReaderManager.getInstance()
+          .get(overflowSeriesDataSource.getUnsealedFile().getFilePath(), true);
+      ChunkLoaderImpl chunkLoader = new ChunkLoaderImpl(tsFileSequenceReader);
+      List<ChunkMetaData> metaDataList =
+          overflowSeriesDataSource.getUnsealedFile().getChunkMetaDataList();
 
-        unSeqMergeReader
-            .addReaderWithPriority(new EngineChunkReader(chunkReader, tsFileSequenceReader),
-                priorityValue);
-        priorityValue++;
-      }
+      priorityValue = createReadersForChunk(metaDataList, chunkLoader, filter, unSeqMergeReader,
+          tsFileSequenceReader, priorityValue);
+    }
+    if (overflowSeriesDataSource.hasRawSeriesChunk()) {
+      ReadOnlyMemChunk chunk = overflowSeriesDataSource.getReadableChunk();
+      unSeqMergeReader
+          .addReaderWithPriority(new MemChunkReader(chunk, filter),
+              priorityValue);
     }
 
     return unSeqMergeReader;
+  }
+
+  private int createReadersForChunk(List<ChunkMetaData> metaDataList, ChunkLoader chunkLoader,
+       Filter filter, PriorityMergeReader unSeqMergeReader,
+      TsFileSequenceReader tsFileSequenceReader, int priorityValue)
+      throws IOException {
+    for (ChunkMetaData chunkMetaData : metaDataList) {
+      Chunk chunk = chunkLoader.getChunk(chunkMetaData);
+      ChunkReader chunkReader;
+      if (filter == null) {
+        chunkReader = new ChunkReaderWithoutFilter(chunk);
+      } else {
+        chunkReader = new ChunkReaderWithFilter(chunk, filter);
+      }
+
+      unSeqMergeReader
+          .addReaderWithPriority(new EngineChunkReader(chunkReader, tsFileSequenceReader),
+              priorityValue);
+      priorityValue++;
+    }
+    return priorityValue;
   }
 
   // TODO createUnSeqMergeReaderByTime a method with filter

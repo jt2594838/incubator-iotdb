@@ -20,10 +20,10 @@ package org.apache.iotdb.db.engine;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
-import java.io.IOException;
 import java.util.concurrent.Future;
-import org.apache.iotdb.db.exception.ProcessorException;
 import org.apache.iotdb.db.utils.EnvironmentUtils;
 import org.apache.iotdb.db.utils.ImmediateFuture;
 import org.junit.After;
@@ -36,9 +36,9 @@ import org.junit.Test;
  */
 public class ProcessorTest {
 
-  TestLRUProcessor processor1;
-  TestLRUProcessor processor2;
-  TestLRUProcessor processor3;
+  private TestLRUProcessor processor1;
+  private TestLRUProcessor processor2;
+  private TestLRUProcessor processor3;
 
   @Before
   public void setUp() throws Exception {
@@ -55,7 +55,7 @@ public class ProcessorTest {
   @Test
   public void testEquals() {
     assertEquals(processor1, processor3);
-    assertFalse(processor1.equals(processor2));
+    assertNotEquals(processor1, processor2);
   }
 
   @Test
@@ -66,13 +66,13 @@ public class ProcessorTest {
 
     Thread.sleep(100);
 
-    assertEquals(false, processor1.tryReadLock());
-    assertEquals(false, processor1.tryLock(true));
+    assertFalse(processor1.tryReadLock());
+    assertFalse(processor1.tryLock(true));
 
     Thread.sleep(2000);
 
-    assertEquals(true, processor1.tryLock(true));
-    assertEquals(true, processor1.tryLock(false));
+    assertTrue(processor1.tryLock(true));
+    assertTrue(processor1.tryLock(false));
 
     processor1.readUnlock();
     processor1.writeUnlock();
@@ -81,19 +81,19 @@ public class ProcessorTest {
     thread2.start();
     Thread.sleep(100);
 
-    assertEquals(false, processor1.tryWriteLock());
-    assertEquals(true, processor1.tryReadLock());
+    assertFalse(processor1.tryWriteLock());
+    assertTrue(processor1.tryReadLock());
 
     Thread.sleep(1500);
-    assertEquals(false, processor1.tryWriteLock());
+    assertFalse(processor1.tryWriteLock());
     processor1.readUnlock();
-    assertEquals(true, processor1.tryWriteLock());
+    assertTrue(processor1.tryWriteLock());
     processor1.writeUnlock();
   }
 
   class TestLRUProcessor extends Processor {
 
-    public TestLRUProcessor(String nameSpacePath) {
+    TestLRUProcessor(String nameSpacePath) {
       super(nameSpacePath);
     }
 
@@ -103,12 +103,12 @@ public class ProcessorTest {
     }
 
     @Override
-    public void close() throws ProcessorException {
+    public void close() {
 
     }
 
     @Override
-    public Future<Boolean> flush() throws IOException {
+    public Future<Boolean> flush() {
       return new ImmediateFuture<>(true);
     }
 

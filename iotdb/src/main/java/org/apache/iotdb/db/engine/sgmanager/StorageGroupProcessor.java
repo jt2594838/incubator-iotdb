@@ -59,7 +59,6 @@ import org.apache.iotdb.db.engine.datasource.SeriesDataSource;
 import org.apache.iotdb.db.engine.tsfiledata.TsFileProcessor;
 import org.apache.iotdb.db.engine.version.SimpleFileVersionController;
 import org.apache.iotdb.db.engine.version.VersionController;
-import org.apache.iotdb.db.exception.FileNodeProcessorException;
 import org.apache.iotdb.db.exception.PathErrorException;
 import org.apache.iotdb.db.exception.StorageGroupProcessorException;
 import org.apache.iotdb.db.exception.TsFileProcessorException;
@@ -86,8 +85,6 @@ import org.apache.iotdb.tsfile.read.expression.impl.SingleSeriesExpression;
 import org.apache.iotdb.tsfile.utils.Pair;
 import org.apache.iotdb.tsfile.write.chunk.ChunkBuffer;
 import org.apache.iotdb.tsfile.write.chunk.ChunkWriterImpl;
-import org.apache.iotdb.tsfile.write.record.TSRecord;
-import org.apache.iotdb.tsfile.write.record.datapoint.LongDataPoint;
 import org.apache.iotdb.tsfile.write.schema.FileSchema;
 import org.apache.iotdb.tsfile.write.schema.MeasurementSchema;
 import org.apache.iotdb.tsfile.write.writer.TsFileIOWriter;
@@ -102,7 +99,7 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
   private static final String OLD_FILE_RECORD = "MERGE_OLD_FILES";
 
   private final String statStorageGroupName;
-  private String fileNodeDir;
+  private String storageGroupDir;
 
   private TsFileProcessor tsFileProcessor;
   private OverflowProcessor overflowProcessor;
@@ -135,11 +132,10 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
   private ModificationFile mergingModification;
 
   private TsFileIOWriter mergeFileWriter = null;
-  private String mergeOutputPath = null;
-  private String mergeBaseDir = null;
-  private String mergeFileName = null;
   private boolean mergeIsChunkGroupHasData = false;
   private long mergeStartPos;
+
+  private Map<String, AtomicLong> statisticMap;
 
   /**
    * Construct processor using StorageGroup name
@@ -151,14 +147,15 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
 
     fileSchema = constructFileSchema(processorName);
 
-    File systemFolder = new File(IoTDBDescriptor.getInstance().getConfig().getFileNodeDir(),
+    File systemFolder = new File(IoTDBDescriptor.getInstance().getConfig().getStorageGroupDir(),
         processorName);
     if (!systemFolder.exists()) {
       systemFolder.mkdirs();
-      LOGGER.info("The directory of the filenode processor {} doesn't exist. Create new directory {}",
+      LOGGER.info("The directory of the storage group processor {} doesn't exist. Create new "
+              + "directory {}",
           getProcessorName(), systemFolder.getAbsolutePath());
     }
-    fileNodeDir = systemFolder.getAbsolutePath();
+    storageGroupDir = systemFolder.getAbsolutePath();
     try {
       cleanLastMerge();
     } catch (IOException e) {
@@ -181,15 +178,7 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
             + processorName.replaceAll("\\.", "_");
 
     // RegisterStatService
-    if (IoTDBDescriptor.getInstance().getConfig().isEnableStatMonitor()) {
-      String statStorageDeltaName =
-          MonitorConstants.STAT_STORAGE_GROUP_PREFIX + MonitorConstants.MONITOR_PATH_SEPARATOR
-              + MonitorConstants.FILE_NODE_PATH + MonitorConstants.MONITOR_PATH_SEPARATOR
-              + processorName.replaceAll("\\.", "_");
-      StatMonitor statMonitor = StatMonitor.getInstance();
-      registerStatMetadata();
-      statMonitor.registerStatistics(statStorageDeltaName, this);
-    }
+    registerStatMetadata();
   }
 
   public OperationResult insert(InsertPlan insertPlan) throws TsFileProcessorException {
@@ -287,14 +276,28 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
 
   @Override
   public void registerStatMetadata() {
-    Map<String, String> hashMap = new HashMap<>();
+    if (IoTDBDescriptor.getInstance().getConfig().isEnableStatMonitor()) {
+      String statStorageDeltaName =
+          MonitorConstants.STAT_STORAGE_GROUP_PREFIX + MonitorConstants.MONITOR_PATH_SEPARATOR
+              + MonitorConstants.FILE_NODE_PATH + MonitorConstants.MONITOR_PATH_SEPARATOR
+              + processorName.replaceAll("\\.", "_");
+      StatMonitor statMonitor = StatMonitor.getInstance();
+      statMonitor.registerStatistics(statStorageDeltaName, this);
+      Map<String, String> typeMap = new HashMap<>();
+      for (StorageGroupProcessorStatConstants statConstant :
+          StorageGroupProcessorStatConstants.values()) {
+        typeMap
+            .put(statStorageGroupName + MonitorConstants.MONITOR_PATH_SEPARATOR + statConstant.name(),
+                MonitorConstants.DATA_TYPE_INT64);
+      }
+      StatMonitor.getInstance().registerStatStorageGroup(typeMap);
+    }
+
+    statisticMap = new HashMap<>();
     for (StorageGroupProcessorStatConstants statConstant :
         StorageGroupProcessorStatConstants.values()) {
-      hashMap
-          .put(statStorageGroupName + MonitorConstants.MONITOR_PATH_SEPARATOR + statConstant.name(),
-              MonitorConstants.DATA_TYPE_INT64);
+      statisticMap.put(statConstant.name(), new AtomicLong(0));
     }
-    StatMonitor.getInstance().registerStatStorageGroup(hashMap);
   }
 
   @Override
@@ -310,7 +313,7 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
 
   @Override
   public Map<String, AtomicLong> getStatParamsHashMap() {
-    return null;
+    return statisticMap;
   }
 
   private FileSchema constructFileSchema(String processorName) {
@@ -416,7 +419,7 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
   /**
    * Assign a token to a new query and put it into the newSet so that we know which
    */
-  public int addMultiPassCount() {
+  int addMultiPassCount() {
     LOGGER.debug("Add MultiPassCount: read lock newMultiPassCount.");
     Integer token = newMultiPassCount.incrementAndGet();
 
@@ -428,7 +431,7 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
   /**
    * decrease multiple pass count.
    */
-  public void decreaseMultiPassCount(int token) {
+  void decreaseMultiPassCount(int token) {
     if (newMultiPassTokenSet.contains(token)) {
       newMultiPassTokenSet.remove(token);
       LOGGER.debug("Remove multi token:{}, nspath:{}, new set:{}, count:{}", token,
@@ -454,7 +457,7 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
    * @param srcFilePath the path of the source file
    */
   @SuppressWarnings("ResultOfMethodCallIgnored")
-  public void appendFile(TsFileResource destFileResource, String srcFilePath)
+  void appendFile(TsFileResource destFileResource, String srcFilePath)
       throws TsFileProcessorException {
     try {
       if (!destFileResource.getFile().getParentFile().exists()) {
@@ -464,11 +467,11 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
       File srcFile = new File(srcFilePath);
       File destFile = destFileResource.getFile();
       if (!srcFile.exists()) {
-        throw new FileNodeProcessorException(
+        throw new StorageGroupProcessorException(
             String.format("The source file %s does not exist.", srcFilePath));
       }
       if (destFile.exists()) {
-        throw new FileNodeProcessorException(
+        throw new StorageGroupProcessorException(
             String.format("The destination file %s already exists.",
                 destFileResource.getFile().getAbsolutePath()));
       }
@@ -478,9 +481,10 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
       }
       // append the new tsfile
       this.tsFileProcessor.appendFile(destFileResource);
-      // reconstruct the inverted index of the newFileNodes
+      // reconstruct the inverted index of the new storage groups
     } catch (Exception e) {
-      LOGGER.error("Failed to append the tsfile {} to filenode processor {}.", destFileResource,
+      LOGGER.error("Failed to append the tsfile {} to storage group processor {}.",
+          destFileResource,
           getProcessorName());
       throw new TsFileProcessorException(e);
     }
@@ -491,7 +495,7 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
    *
    * @param appendFile the appended tsfile information
    */
-  public List<String> getOverlapFiles(TsFileResource appendFile, String uuid)
+  List<String> getOverlapFiles(TsFileResource appendFile, String uuid)
       throws TsFileProcessorException {
     return tsFileProcessor.getOverlapFiles(appendFile, uuid);
   }
@@ -504,7 +508,7 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
    * @param compressor
    * @param props
    */
-  public void addTimeSeries(String measurementId, TSDataType dataType, TSEncoding encoding,
+  void addTimeSeries(String measurementId, TSDataType dataType, TSEncoding encoding,
       CompressionType compressor, Map<String, String> props) {
     fileSchema.registerMeasurement(new MeasurementSchema(measurementId, dataType, encoding,
         compressor, props));
@@ -513,7 +517,8 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
   /**
    * submit the merge task to the <code>MergePool</code>.
    *
-   * @return null -can't submit the merge task, because this filenode is not overflowed or it is
+   * @return null -can't submit the merge task, because this storage group is not overflowed or
+   * it is
    * merging now. Future - submit the merge task successfully.
    */
   Future submitToMerge() {
@@ -522,7 +527,7 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
       long thisMergeTime = System.currentTimeMillis();
       long mergeTimeInterval = thisMergeTime - lastMergeTime;
       LOGGER.info(
-          "The filenode {} last merge time is {}, this merge time is {}, "
+          "The storage group {} last merge time is {}, this merge time is {}, "
               + "merge time interval is {}s",
           processorName, ofInstant(Instant.ofEpochMilli(lastMergeTime),
               zoneId), ofInstant(Instant.ofEpochMilli(thisMergeTime),
@@ -546,12 +551,12 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
     if (!isMerging) {
       Callable<Exception> mergeThread;
       mergeThread = new MergeTask(this);
-      LOGGER.info("Submit the merge task, the merge filenode is {}", processorName);
+      LOGGER.info("Submit the merge task, the merge storage group is {}", processorName);
       return MergeManager.getInstance().submit(mergeThread);
     } else {
       LOGGER.warn(
           "Skip this merge task submission, because last merge task is not over yet, "
-              + "the merge filenode processor is {}",
+              + "the merge storage group is {}",
           processorName);
     }
     return null;
@@ -746,7 +751,7 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
   }
 
   private File getMergeFileRecord() {
-    return new File(fileNodeDir, OLD_FILE_RECORD);
+    return new File(storageGroupDir, OLD_FILE_RECORD);
   }
 
   private void recordOldFiles(TsFileResource newFile,
@@ -781,11 +786,11 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
     // min data time of all files
     long minimumTime = resolveMinimumTime(seqGroup, unseqGroup);
 
-    mergeBaseDir = Directories.getInstance().getNextFolderForTsfile();
-    mergeFileName = minimumTime
+    String mergeBaseDir = Directories.getInstance().getNextFolderForTsfile();
+    String mergeFileName = minimumTime
         + EngineConstants.TSFILE_NAME_SEPARATOR + System.currentTimeMillis()
         + MERGE_TEMP_SUFFIX;
-    mergeOutputPath = constructOutputFilePath(mergeBaseDir, getProcessorName(),
+    String mergeOutputPath = constructOutputFilePath(mergeBaseDir, getProcessorName(),
         mergeFileName);
     mergeFileName = getProcessorName() + File.separatorChar + mergeFileName;
     try {
@@ -801,54 +806,9 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
     Map<String, Long> startTimeMap = new HashMap<>();
     Map<String, Long> endTimeMap = new HashMap<>();
 
-    QueryContext context = new QueryContext();
-    IReader seriesReader = null;
-    ChunkGroupFooter footer;
-    int numOfChunks = 0;
+
     for (Entry<String, List<Path>> entry : pathMap.entrySet()) {
-      // start writing a device
-      String deviceId = entry.getKey();
-      List<Path> paths = entry.getValue();
-
-      for (Path path : paths) {
-        // start writing a series
-        try {
-          // sequence
-          SeriesDataSource seqSource = new SeriesDataSource(path, seqGroup, null, null);
-          SeriesDataSource unseqSource = new SeriesDataSource(path, unseqGroup, null, null);
-
-          seriesReader = SeriesReaderFactory.getInstance().createSeriesReaderForMerge(seqSource,
-              unseqSource, context);
-          TSDataType dataType = MManager.getInstance().getSeriesType(path.getFullPath());
-          // end writing a series
-          numOfChunks += queryAndWriteSeries(seriesReader, path, null, dataType,
-              startTimeMap, endTimeMap);
-        } catch (PathErrorException | IOException e) {
-          LOGGER.error("{}: error occurred when merging {}", processorName, path.getFullPath(), e);
-        } finally {
-          if (seriesReader != null) {
-            try {
-              seriesReader.close();
-            } catch (IOException e) {
-              LOGGER.error("{}: cannot close series reader of {} when merge", processorName,
-                  path.getFullPath(), e);
-            }
-          }
-        }
-      }
-
-      // end writing a device
-      try {
-        if (mergeIsChunkGroupHasData) {
-          // end the new rowGroupMetadata
-          long size = mergeFileWriter.getPos() - mergeStartPos;
-          footer = new ChunkGroupFooter(deviceId, size, numOfChunks);
-          mergeFileWriter.endChunkGroup(footer, 0);
-        }
-      } catch (IOException e) {
-        LOGGER.error("{}: Cannot end ChunkGroup of {} when merge", processorName, deviceId, e);
-      }
-
+      mergeDevice(entry.getKey(), entry.getValue(), seqGroup, unseqGroup, startTimeMap, endTimeMap);
     }
 
     try {
@@ -868,10 +828,54 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
     newResource.setModFile(mergingModification);
     mergingModification = null;
     mergeFileWriter = null;
-    mergeOutputPath = null;
-    mergeBaseDir = null;
-    mergeFileName = null;
     return newResource;
+  }
+
+  private void mergeDevice(String deviceId, List<Path> paths, List<TsFileResource> seqGroup,
+      List<TsFileResource> unseqGroup, Map<String, Long> startTimeMap,
+      Map<String, Long> endTimeMap) {
+    QueryContext context = new QueryContext();
+    IReader seriesReader = null;
+    ChunkGroupFooter footer;
+    int numOfChunks = 0;
+    // start writing a device
+    for (Path path : paths) {
+      // start writing a series
+      try {
+        // sequence
+        SeriesDataSource seqSource = new SeriesDataSource(path, seqGroup, null, null);
+        SeriesDataSource unseqSource = new SeriesDataSource(path, unseqGroup, null, null);
+
+        seriesReader = SeriesReaderFactory.getInstance().createSeriesReaderForMerge(seqSource,
+            unseqSource, context);
+        TSDataType dataType = MManager.getInstance().getSeriesType(path.getFullPath());
+        // end writing a series
+        numOfChunks += queryAndWriteSeries(seriesReader, path, null, dataType,
+            startTimeMap, endTimeMap);
+      } catch (PathErrorException | IOException e) {
+        LOGGER.error("{}: error occurred when merging {}", processorName, path.getFullPath(), e);
+      } finally {
+        if (seriesReader != null) {
+          try {
+            seriesReader.close();
+          } catch (IOException e) {
+            LOGGER.error("{}: cannot close series reader of {} when merge", processorName,
+                path.getFullPath(), e);
+          }
+        }
+      }
+    }
+    // end writing a device
+    try {
+      if (mergeIsChunkGroupHasData) {
+        // end the new rowGroupMetadata
+        long size = mergeFileWriter.getPos() - mergeStartPos;
+        footer = new ChunkGroupFooter(deviceId, size, numOfChunks);
+        mergeFileWriter.endChunkGroup(footer, 0);
+      }
+    } catch (IOException e) {
+      LOGGER.error("{}: Cannot end ChunkGroup of {} when merge", processorName, deviceId, e);
+    }
   }
 
   private Map<String, List<Path>> resolveMergePaths(List<TsFileResource> seqGroup, List<TsFileResource> unseqGroup)
@@ -941,7 +945,7 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
     int numOfChunk = 0;
     if (!seriesReader.hasNext()) {
       LOGGER.debug(
-          "The time-series {} has no data with the filter {} in the filenode processor {}",
+          "The time-series {} has no data with the filter {} in the storage group {}",
           path, seriesFilter, getProcessorName());
     } else {
       numOfChunk ++;
@@ -1026,9 +1030,13 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
     // if system crushes during last merge, there may be undeleted old files
     // these files will be deleted in this method
     File mergeRecord = getMergeFileRecord();
+    if (!mergeRecord.exists()) {
+      return;
+    }
+
     List<String> filePaths = new ArrayList<>();
     try (BufferedReader bufferedReader = new BufferedReader(new FileReader(mergeRecord))) {
-      bufferedReader.lines().forEach(line -> filePaths.add(line));
+      bufferedReader.lines().forEach(filePaths::add);
     }
     // the last file should be the merged new file
     String lastFilePath = filePaths.get(filePaths.size() - 1);

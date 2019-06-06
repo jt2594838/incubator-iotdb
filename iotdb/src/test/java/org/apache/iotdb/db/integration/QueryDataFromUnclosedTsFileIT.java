@@ -21,16 +21,19 @@ package org.apache.iotdb.db.integration;
 
 import static org.apache.iotdb.db.utils.EnvironmentUtils.TEST_QUERY_CONTEXT;
 import static org.apache.iotdb.db.utils.EnvironmentUtils.TEST_QUERY_JOB_ID;
+import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.util.Collections;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
-import org.apache.iotdb.db.engine.filenode.DatabaseEngine;
-import org.apache.iotdb.db.exception.StorageGroupManagerException;
+import org.apache.iotdb.db.engine.DatabaseEngine;
+import org.apache.iotdb.db.engine.DatabaseEngineFactory;
 import org.apache.iotdb.db.exception.MetadataArgsErrorException;
 import org.apache.iotdb.db.exception.PathErrorException;
 import org.apache.iotdb.db.exception.StartupException;
+import org.apache.iotdb.db.exception.StorageGroupManagerException;
 import org.apache.iotdb.db.metadata.MManager;
+import org.apache.iotdb.db.qp.physical.crud.InsertPlan;
 import org.apache.iotdb.db.query.context.QueryContext;
 import org.apache.iotdb.db.query.control.QueryResourceManager;
 import org.apache.iotdb.db.query.executor.EngineQueryRouter;
@@ -41,18 +44,16 @@ import org.apache.iotdb.tsfile.file.metadata.enums.TSEncoding;
 import org.apache.iotdb.tsfile.read.common.Path;
 import org.apache.iotdb.tsfile.read.expression.QueryExpression;
 import org.apache.iotdb.tsfile.read.query.dataset.QueryDataSet;
-import org.apache.iotdb.tsfile.write.record.TSRecord;
-import org.apache.iotdb.tsfile.write.record.datapoint.IntDataPoint;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 public class QueryDataFromUnclosedTsFileIT {
 
-  long bufferWriteFileSize;
-  DatabaseEngine sgManager;
-  MManager mManager;
-  EngineQueryRouter queryManager;
+  private long bufferWriteFileSize;
+  private DatabaseEngine sgManager;
+  private MManager mManager;
+  private EngineQueryRouter queryManager;
   @Before
   public void setUp() throws IOException, StorageGroupManagerException, StartupException {
     EnvironmentUtils.cleanEnv();
@@ -60,15 +61,14 @@ public class QueryDataFromUnclosedTsFileIT {
     TEST_QUERY_JOB_ID = QueryResourceManager.getInstance().assignJobId();
     TEST_QUERY_CONTEXT = new QueryContext(TEST_QUERY_JOB_ID);
     bufferWriteFileSize = IoTDBDescriptor.getInstance().getConfig().getBufferwriteFileSizeThreshold();
-    //IoTDBDescriptor.getInstance().getConfig().setBufferwriteFileSizeThreshold(100);
-    sgManager  = DatabaseEngine.getInstance();
+    sgManager  = DatabaseEngineFactory.getCurrent();
     mManager = MManager.getInstance();
     queryManager = new EngineQueryRouter();
   }
 
   @After
   public void tearDown() throws StorageGroupManagerException, IOException {
-    IoTDBDescriptor.getInstance().getConfig().setBufferwriteFileSizeThreshold(bufferWriteFileSize);;
+    IoTDBDescriptor.getInstance().getConfig().setBufferwriteFileSizeThreshold(bufferWriteFileSize);
 
     EnvironmentUtils.cleanEnv();
 
@@ -78,25 +78,29 @@ public class QueryDataFromUnclosedTsFileIT {
   public void test()
       throws StorageGroupManagerException, IOException, PathErrorException, MetadataArgsErrorException {
     mManager.setStorageLevelToMTree("root.test");
-    mManager.addPathToMTree("root.test.d1.s1",  TSDataType.INT32, TSEncoding.RLE, CompressionType.SNAPPY, Collections.emptyMap());
-    mManager.addPathToMTree("root.test.d2.s1",  TSDataType.INT32, TSEncoding.RLE, CompressionType.SNAPPY, Collections.emptyMap());
-    sgManager.addTimeSeries(new Path("root.test.d1", "s1"), TSDataType.INT32, TSEncoding.RLE, CompressionType.SNAPPY, Collections
+    mManager.addPathToMTree("root.test.d1.s1",  TSDataType.INT32, TSEncoding.RLE,
+        CompressionType.SNAPPY, Collections.emptyMap());
+    mManager.addPathToMTree("root.test.d2.s1",  TSDataType.INT32, TSEncoding.RLE,
+        CompressionType.SNAPPY, Collections.emptyMap());
+    sgManager.addTimeSeries(new Path("root.test.d1", "s1"), TSDataType.INT32,
+        TSEncoding.RLE, CompressionType.SNAPPY, Collections
         .emptyMap());
-    sgManager.addTimeSeries(new Path("root.test.d2", "s1"), TSDataType.INT32, TSEncoding.RLE, CompressionType.SNAPPY, Collections
+    sgManager.addTimeSeries(new Path("root.test.d2", "s1"), TSDataType.INT32,
+        TSEncoding.RLE, CompressionType.SNAPPY, Collections
         .emptyMap());
-    long time = System.currentTimeMillis();
     for (int i=0; i < 20000; i++) {
-      sgManager.insert(new TSRecord(i, "root.test.d1").addTuple(new IntDataPoint("s1", i)), false);
-      sgManager.insert(new TSRecord(i, "root.test.d2").addTuple(new IntDataPoint("s1", i)), false);
+      sgManager.insert(new InsertPlan("root.test.d1", i, "s1", String.valueOf(i)), false);
+      sgManager.insert(new InsertPlan("root.test.d2", i, "s1", String.valueOf(i)), false);
     }
     QueryExpression qe = QueryExpression
         .create(Collections.singletonList(new Path("root.test.d1", "s1")), null);
     QueryDataSet result = queryManager.query(qe, TEST_QUERY_CONTEXT);
+    int cnt = 0;
     while (result.hasNext()) {
       result.next();
-      //System.out.println(record.getTimestamp() + "," + record.getFields().get(0).getIntV());
+      cnt ++;
     }
-
+    assertEquals(20000, cnt);
   }
 
 }

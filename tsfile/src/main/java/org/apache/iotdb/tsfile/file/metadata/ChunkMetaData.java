@@ -31,6 +31,9 @@ import org.apache.iotdb.tsfile.utils.ReadWriteIOUtils;
  */
 public class ChunkMetaData {
 
+  // TODO: remove hard coding
+  public static long estimatedObjectByteSize = 1500;
+
   private String measurementUid;
 
   /**

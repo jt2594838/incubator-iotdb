@@ -28,14 +28,14 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.iotdb.db.conf.IoTDBConfig;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
-import org.apache.iotdb.db.engine.filenode.DatabaseEngine;
+import org.apache.iotdb.db.engine.DatabaseEngine;
+import org.apache.iotdb.db.engine.DatabaseEngineFactory;
 import org.apache.iotdb.db.exception.StorageGroupManagerException;
 import org.apache.iotdb.db.metadata.MManager;
 import org.apache.iotdb.db.monitor.MonitorConstants.FileSizeConstants;
 import org.apache.iotdb.db.monitor.collector.FileSize;
+import org.apache.iotdb.db.qp.physical.crud.InsertPlan;
 import org.apache.iotdb.db.utils.EnvironmentUtils;
-import org.apache.iotdb.tsfile.write.record.TSRecord;
-import org.apache.iotdb.tsfile.write.record.datapoint.DataPoint;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -64,7 +64,7 @@ public class MonitorTest {
 
   @Test
   public void testDatabaseEngineMonitorAndAddMetadata() {
-    DatabaseEngine dbEngine = DatabaseEngine.getInstance();
+    DatabaseEngine dbEngine = DatabaseEngineFactory.getCurrent();
     FileSize fileSize = FileSize.getInstance();
     statMonitor = StatMonitor.getInstance();
     statMonitor.registerStatStorageGroup();
@@ -103,21 +103,21 @@ public class MonitorTest {
 
     // Get stat data and test right
 
-    Map<String, TSRecord> statHashMap = dbEngine.getAllStatisticsValue();
-    Map<String, TSRecord> fileSizeStatMap = fileSize.getAllStatisticsValue();
+    Map<String, InsertPlan> statHashMap = dbEngine.getAllStatisticsValue();
+    Map<String, InsertPlan> fileSizeStatMap = fileSize.getAllStatisticsValue();
 
     String path = dbEngine.getAllPathForStatistic().get(0);
     String fileSizeStatPath = fileSize.getAllPathForStatistic().get(0);
     int pos = path.lastIndexOf('.');
     int fileSizeStatPos = fileSizeStatPath.lastIndexOf('.');
-    TSRecord fTSRecord = statHashMap.get(path.substring(0, pos));
-    TSRecord fileSizeRecord = fileSizeStatMap.get(fileSizeStatPath.substring(0, fileSizeStatPos));
+    InsertPlan fPlan = statHashMap.get(path.substring(0, pos));
+    InsertPlan fileSizePlan = fileSizeStatMap.get(fileSizeStatPath.substring(0, fileSizeStatPos));
 
-    assertNotEquals(null, fTSRecord);
-    assertNotEquals(null, fileSizeRecord);
-    for (DataPoint dataPoint : fTSRecord.dataPointList) {
-      String m = dataPoint.getMeasurementId();
-      Long v = (Long) dataPoint.getValue();
+    assertNotEquals(null, fPlan);
+    assertNotEquals(null, fileSizePlan);
+    for (int i = 0; i < fPlan.getMeasurements().length; i++) {
+      String m = fPlan.getMeasurements()[i];
+      Long v = Long.parseLong(fPlan.getValues()[i]);
       if (m.equals("TOTAL_REQ_SUCCESS")) {
         assertEquals(v, new Long(0));
       }
@@ -129,9 +129,9 @@ public class MonitorTest {
         assertEquals(v, new Long(0));
       }
     }
-    for (DataPoint dataPoint : fileSizeRecord.dataPointList) {
-      String m = dataPoint.getMeasurementId();
-      Long v = (Long) dataPoint.getValue();
+    for (int i = 0; i < fileSizePlan.getMeasurements().length; i++) {
+      String m = fileSizePlan.getMeasurements()[i];
+      Long v = Long.parseLong(fileSizePlan.getValues()[i]);
       if (m.equals(FileSizeConstants.OVERFLOW.name())) {
         assertEquals(v, new Long(0));
       }

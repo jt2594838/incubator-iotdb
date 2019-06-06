@@ -18,7 +18,6 @@
  */
 package org.apache.iotdb.db.qp.utils;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,9 +25,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.TreeSet;
-
-import org.apache.iotdb.db.exception.StorageGroupManagerException;
-import org.apache.iotdb.db.exception.PathErrorException;
 import org.apache.iotdb.db.exception.ProcessorException;
 import org.apache.iotdb.db.qp.constant.SQLConstant;
 import org.apache.iotdb.db.qp.executor.QueryProcessExecutor;
@@ -38,7 +34,6 @@ import org.apache.iotdb.db.qp.physical.crud.InsertPlan;
 import org.apache.iotdb.db.qp.physical.crud.UpdatePlan;
 import org.apache.iotdb.db.query.context.QueryContext;
 import org.apache.iotdb.db.query.fill.IFill;
-import org.apache.iotdb.tsfile.exception.filter.QueryFilterOptimizationException;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.read.common.Path;
 import org.apache.iotdb.tsfile.read.expression.IExpression;
@@ -57,6 +52,8 @@ public class MemIntQpExecutor extends QueryProcessExecutor {
   // pathStr, TreeMap<time, value>
   private Map<String, TestSeries> demoMemDataBase = new HashMap<>();
 
+  @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+  // dummy timestamp container
   private TreeSet<Long> timeStampUnion = new TreeSet<>();
   private Map<String, List<String>> fakeAllPaths;
 
@@ -100,9 +97,8 @@ public class MemIntQpExecutor extends QueryProcessExecutor {
         return flag;
       case INSERT:
         InsertPlan insert = (InsertPlan) plan;
-        int result = multiInsert(insert.getDeviceId(), insert.getTime(), insert.getMeasurements(),
-            insert.getValues());
-        return result == 0;
+        insert(insert);
+        return true;
       default:
         throw new UnsupportedOperationException();
     }
@@ -110,24 +106,19 @@ public class MemIntQpExecutor extends QueryProcessExecutor {
 
   @Override
   public QueryDataSet aggregate(List<Path> paths, List<String> aggres, IExpression expression,
-      QueryContext context)
-      throws ProcessorException, IOException, PathErrorException, StorageGroupManagerException,
-      QueryFilterOptimizationException {
+      QueryContext context) {
     return null;
   }
 
   @Override
   public QueryDataSet groupBy(List<Path> paths, List<String> aggres, IExpression expression,
-      long unit, long origin, List<Pair<Long, Long>> intervals, QueryContext context)
-      throws ProcessorException, IOException, PathErrorException, StorageGroupManagerException,
-      QueryFilterOptimizationException {
+      long unit, long origin, List<Pair<Long, Long>> intervals, QueryContext context) {
     return null;
   }
 
   @Override
   public QueryDataSet fill(List<Path> fillPaths, long queryTime, Map<TSDataType, IFill> fillTypes,
-      QueryContext context)
-      throws ProcessorException, IOException, PathErrorException, StorageGroupManagerException {
+      QueryContext context) {
     return null;
   }
 
@@ -179,15 +170,14 @@ public class MemIntQpExecutor extends QueryProcessExecutor {
   }
 
   @Override
-  public int insert(Path path, long insertTime, String value) {
-    String strPath = path.toString();
+  public void insert(InsertPlan plan) {
+    String strPath = plan.getDeviceId() + "." + plan.getMeasurements()[0];
     if (!demoMemDataBase.containsKey(strPath)) {
       demoMemDataBase.put(strPath, new TestSeries());
     }
-    demoMemDataBase.get(strPath).data.put(insertTime, Integer.valueOf(value));
-    timeStampUnion.add(insertTime);
-    LOG.info("insert into {}:<{},{}>", path, insertTime, value);
-    return 0;
+    demoMemDataBase.get(strPath).data.put(plan.getTime(), Integer.valueOf(plan.getValues()[0]));
+    timeStampUnion.add(plan.getTime());
+    LOG.info("insert into {}:<{},{}>", strPath, plan.getTime(), plan.getValues()[0]);
   }
 
   @Override
@@ -197,12 +187,6 @@ public class MemIntQpExecutor extends QueryProcessExecutor {
         add(fullPath);
       }
     };
-  }
-
-  @Override
-  public int multiInsert(String deviceId, long insertTime, String[] measurementList,
-      String[] insertValues) {
-    return 0;
   }
 
   private class TestSeries {

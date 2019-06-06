@@ -26,13 +26,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.apache.iotdb.db.engine.filenode.DatabaseEngine;
+import org.apache.iotdb.db.engine.DatabaseEngineFactory;
 import org.apache.iotdb.db.engine.memcontrol.BasicMemController.UsageLevel;
-import org.apache.iotdb.db.exception.StorageGroupManagerException;
-import org.apache.iotdb.db.exception.MetadataArgsErrorException;
 import org.apache.iotdb.db.exception.PathErrorException;
 import org.apache.iotdb.db.exception.StartupException;
+import org.apache.iotdb.db.exception.StorageGroupManagerException;
 import org.apache.iotdb.db.metadata.MManager;
+import org.apache.iotdb.db.qp.physical.crud.InsertPlan;
 import org.apache.iotdb.db.query.executor.EngineQueryRouter;
 import org.apache.iotdb.db.utils.EnvironmentUtils;
 import org.apache.iotdb.tsfile.common.conf.TSFileConfig;
@@ -42,8 +42,6 @@ import org.apache.iotdb.tsfile.file.metadata.enums.TSEncoding;
 import org.apache.iotdb.tsfile.read.common.Path;
 import org.apache.iotdb.tsfile.read.expression.QueryExpression;
 import org.apache.iotdb.tsfile.read.query.dataset.QueryDataSet;
-import org.apache.iotdb.tsfile.write.record.TSRecord;
-import org.apache.iotdb.tsfile.write.record.datapoint.DoubleDataPoint;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -64,7 +62,7 @@ public class DeletionQueryTest {
   }
 
   @Before
-  public void setup() throws MetadataArgsErrorException,
+  public void setup() throws
       PathErrorException, IOException, StorageGroupManagerException, StartupException {
     EnvironmentUtils.envSetUp();
 
@@ -72,7 +70,7 @@ public class DeletionQueryTest {
     for (int i = 0; i < 10; i++) {
       MManager.getInstance().addPathToMTree(processorName + "." + measurements[i], dataType,
           encoding);
-      DatabaseEngine.getInstance()
+      DatabaseEngineFactory.getCurrent()
           .addTimeSeries(new Path(processorName, measurements[i]), TSDataType.valueOf(dataType),
               TSEncoding.valueOf(encoding), CompressionType.valueOf(TSFileConfig.compressor),
               Collections.emptyMap());
@@ -89,17 +87,18 @@ public class DeletionQueryTest {
       StorageGroupManagerException, IOException {
 
     for (int i = 1; i <= 100; i++) {
-      TSRecord record = new TSRecord(i, processorName);
-      for (int j = 0; j < 10; j++) {
-        record.addTuple(new DoubleDataPoint(measurements[j], i * 1.0));
+      String[] values = new String[measurements.length];
+      for (int j = 0; j < measurements.length; j++) {
+        values[j] = String.valueOf(i * 1.0);
       }
-      DatabaseEngine.getInstance().insert(record, false);
+      InsertPlan plan = new InsertPlan(processorName, i, measurements, values);
+      DatabaseEngineFactory.getCurrent().insert(plan, false);
     }
 
-    DatabaseEngine.getInstance().delete(processorName, measurements[3], 50);
-    DatabaseEngine.getInstance().delete(processorName, measurements[4], 50);
-    DatabaseEngine.getInstance().delete(processorName, measurements[5], 30);
-    DatabaseEngine.getInstance().delete(processorName, measurements[5], 50);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[3], 50);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[4], 50);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[5], 30);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[5], 50);
 
     List<Path> pathList = new ArrayList<>();
     pathList.add(new Path(processorName, measurements[3]));
@@ -120,17 +119,18 @@ public class DeletionQueryTest {
   @Test
   public void testDeleteInBufferWriteFile() throws StorageGroupManagerException, IOException {
     for (int i = 1; i <= 100; i++) {
-      TSRecord record = new TSRecord(i, processorName);
-      for (int j = 0; j < 10; j++) {
-        record.addTuple(new DoubleDataPoint(measurements[j], i * 1.0));
+      String[] values = new String[measurements.length];
+      for (int j = 0; j < measurements.length; j++) {
+        values[j] = String.valueOf(i * 1.0);
       }
-      DatabaseEngine.getInstance().insert(record, false);
+      InsertPlan plan = new InsertPlan(processorName, i, measurements, values);
+      DatabaseEngineFactory.getCurrent().insert(plan, false);
     }
-    DatabaseEngine.getInstance().closeAll();
+    DatabaseEngineFactory.getCurrent().closeAll();
 
-    DatabaseEngine.getInstance().delete(processorName, measurements[5], 50);
-    DatabaseEngine.getInstance().delete(processorName, measurements[4], 40);
-    DatabaseEngine.getInstance().delete(processorName, measurements[3], 30);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[5], 50);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[4], 40);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[3], 30);
 
     List<Path> pathList = new ArrayList<>();
     pathList.add(new Path(processorName, measurements[3]));
@@ -152,27 +152,29 @@ public class DeletionQueryTest {
   public void testDeleteInOverflowCache() throws StorageGroupManagerException, IOException {
     // insert into BufferWrite
     for (int i = 101; i <= 200; i++) {
-      TSRecord record = new TSRecord(i, processorName);
-      for (int j = 0; j < 10; j++) {
-        record.addTuple(new DoubleDataPoint(measurements[j], i * 1.0));
+      String[] values = new String[measurements.length];
+      for (int j = 0; j < measurements.length; j++) {
+        values[j] = String.valueOf(i * 1.0);
       }
-      DatabaseEngine.getInstance().insert(record, false);
+      InsertPlan plan = new InsertPlan(processorName, i, measurements, values);
+      DatabaseEngineFactory.getCurrent().insert(plan, false);
     }
-    DatabaseEngine.getInstance().closeAll();
+    DatabaseEngineFactory.getCurrent().closeAll();
 
     // insert into Overflow
     for (int i = 1; i <= 100; i++) {
-      TSRecord record = new TSRecord(i, processorName);
-      for (int j = 0; j < 10; j++) {
-        record.addTuple(new DoubleDataPoint(measurements[j], i * 1.0));
+      String[] values = new String[measurements.length];
+      for (int j = 0; j < measurements.length; j++) {
+        values[j] = String.valueOf(i * 1.0);
       }
-      DatabaseEngine.getInstance().insert(record, false);
+      InsertPlan plan = new InsertPlan(processorName, i, measurements, values);
+      DatabaseEngineFactory.getCurrent().insert(plan, false);
     }
 
-    DatabaseEngine.getInstance().delete(processorName, measurements[3], 50);
-    DatabaseEngine.getInstance().delete(processorName, measurements[4], 50);
-    DatabaseEngine.getInstance().delete(processorName, measurements[5], 30);
-    DatabaseEngine.getInstance().delete(processorName, measurements[5], 50);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[3], 50);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[4], 50);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[5], 30);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[5], 50);
 
     List<Path> pathList = new ArrayList<>();
     pathList.add(new Path(processorName, measurements[3]));
@@ -194,27 +196,29 @@ public class DeletionQueryTest {
   public void testDeleteInOverflowFile() throws StorageGroupManagerException, IOException {
     // insert into BufferWrite
     for (int i = 101; i <= 200; i++) {
-      TSRecord record = new TSRecord(i, processorName);
-      for (int j = 0; j < 10; j++) {
-        record.addTuple(new DoubleDataPoint(measurements[j], i * 1.0));
+      String[] values = new String[measurements.length];
+      for (int j = 0; j < measurements.length; j++) {
+        values[j] = String.valueOf(i * 1.0);
       }
-      DatabaseEngine.getInstance().insert(record, false);
+      InsertPlan plan = new InsertPlan(processorName, i, measurements, values);
+      DatabaseEngineFactory.getCurrent().insert(plan, false);
     }
-    DatabaseEngine.getInstance().closeAll();
+    DatabaseEngineFactory.getCurrent().closeAll();
 
     // insert into Overflow
     for (int i = 1; i <= 100; i++) {
-      TSRecord record = new TSRecord(i, processorName);
-      for (int j = 0; j < 10; j++) {
-        record.addTuple(new DoubleDataPoint(measurements[j], i * 1.0));
+      String[] values = new String[measurements.length];
+      for (int j = 0; j < measurements.length; j++) {
+        values[j] = String.valueOf(i * 1.0);
       }
-      DatabaseEngine.getInstance().insert(record, false);
+      InsertPlan plan = new InsertPlan(processorName, i, measurements, values);
+      DatabaseEngineFactory.getCurrent().insert(plan, false);
     }
-    DatabaseEngine.getInstance().closeAll();
+    DatabaseEngineFactory.getCurrent().closeAll();
 
-    DatabaseEngine.getInstance().delete(processorName, measurements[5], 50);
-    DatabaseEngine.getInstance().delete(processorName, measurements[4], 40);
-    DatabaseEngine.getInstance().delete(processorName, measurements[3], 30);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[5], 50);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[4], 40);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[3], 30);
 
     List<Path> pathList = new ArrayList<>();
     pathList.add(new Path(processorName, measurements[3]));
@@ -234,51 +238,54 @@ public class DeletionQueryTest {
 
   @Test
   public void testSuccessiveDeletion()
-      throws StorageGroupManagerException, IOException, InterruptedException {
+      throws StorageGroupManagerException, IOException {
     for (int i = 1; i <= 100; i++) {
-      TSRecord record = new TSRecord(i, processorName);
-      for (int j = 0; j < 10; j++) {
-        record.addTuple(new DoubleDataPoint(measurements[j], i * 1.0));
+      String[] values = new String[measurements.length];
+      for (int j = 0; j < measurements.length; j++) {
+        values[j] = String.valueOf(i * 1.0);
       }
-      DatabaseEngine.getInstance().insert(record, false);
+      InsertPlan plan = new InsertPlan(processorName, i, measurements, values);
+      DatabaseEngineFactory.getCurrent().insert(plan, false);
     }
 
-    DatabaseEngine.getInstance().delete(processorName, measurements[3], 50);
-    DatabaseEngine.getInstance().delete(processorName, measurements[4], 50);
-    DatabaseEngine.getInstance().delete(processorName, measurements[5], 30);
-    DatabaseEngine.getInstance().delete(processorName, measurements[5], 50);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[3], 50);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[4], 50);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[5], 30);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[5], 50);
 
-    DatabaseEngine.getInstance().forceFlush(UsageLevel.DANGEROUS);
+    DatabaseEngineFactory.getCurrent().forceFlush(UsageLevel.DANGEROUS);
 
     for (int i = 101; i <= 200; i++) {
-      TSRecord record = new TSRecord(i, processorName);
-      for (int j = 0; j < 10; j++) {
-        record.addTuple(new DoubleDataPoint(measurements[j], i * 1.0));
+      String[] values = new String[measurements.length];
+      for (int j = 0; j < measurements.length; j++) {
+        values[j] = String.valueOf(i * 1.0);
       }
-      DatabaseEngine.getInstance().insert(record, false);
+      InsertPlan plan = new InsertPlan(processorName, i, measurements, values);
+      DatabaseEngineFactory.getCurrent().insert(plan, false);
     }
 
-    DatabaseEngine.getInstance().delete(processorName, measurements[3], 250);
-    DatabaseEngine.getInstance().delete(processorName, measurements[4], 250);
-    DatabaseEngine.getInstance().delete(processorName, measurements[5], 230);
-    DatabaseEngine.getInstance().delete(processorName, measurements[5], 250);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[3], 250);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[4], 250);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[5], 230);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[5], 250);
 
-    DatabaseEngine.getInstance().forceFlush(UsageLevel.DANGEROUS);
+    DatabaseEngineFactory.getCurrent().forceFlush(UsageLevel.DANGEROUS);
 
     for (int i = 201; i <= 300; i++) {
-      TSRecord record = new TSRecord(i, processorName);
-      for (int j = 0; j < 10; j++) {
-        record.addTuple(new DoubleDataPoint(measurements[j], i * 1.0));
+      String[] values = new String[measurements.length];
+      for (int j = 0; j < measurements.length; j++) {
+        values[j] = String.valueOf(i * 1.0);
       }
-      DatabaseEngine.getInstance().insert(record, false);
+      InsertPlan plan = new InsertPlan(processorName, i, measurements, values);
+      DatabaseEngineFactory.getCurrent().insert(plan, false);
     }
 
-    DatabaseEngine.getInstance().delete(processorName, measurements[3], 50);
-    DatabaseEngine.getInstance().delete(processorName, measurements[4], 50);
-    DatabaseEngine.getInstance().delete(processorName, measurements[5], 30);
-    DatabaseEngine.getInstance().delete(processorName, measurements[5], 50);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[3], 50);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[4], 50);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[5], 30);
+    DatabaseEngineFactory.getCurrent().deleteData(processorName, measurements[5], 50);
 
-    DatabaseEngine.getInstance().closeAll();
+    DatabaseEngineFactory.getCurrent().closeAll();
 
     List<Path> pathList = new ArrayList<>();
     pathList.add(new Path(processorName, measurements[3]));

@@ -116,7 +116,7 @@ public class OverflowQPExecutor extends QueryProcessExecutor {
         return flag;
       case INSERT:
         InsertPlan insert = (InsertPlan) plan;
-        multiInsert(insert);
+        insert(insert);
         return true;
       case CREATE_ROLE:
       case DELETE_ROLE:
@@ -241,7 +241,7 @@ public class OverflowQPExecutor extends QueryProcessExecutor {
   }
 
   @Override
-  public void multiInsert(InsertPlan plan)
+  public void insert(InsertPlan plan)
       throws ProcessorException {
     try {
       String deviceId = plan.getDeviceId();

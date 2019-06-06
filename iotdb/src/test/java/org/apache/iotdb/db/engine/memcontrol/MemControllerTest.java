@@ -20,19 +20,15 @@ package org.apache.iotdb.db.engine.memcontrol;
 
 import static org.junit.Assert.assertEquals;
 
-import org.apache.iotdb.db.conf.IoTDBConfig;
-import org.apache.iotdb.db.conf.IoTDBDescriptor;
-import org.apache.iotdb.db.exception.BufferWriteProcessorException;
 import org.junit.Test;
 
 public class MemControllerTest {
 
   private static long GB = 1024 * 1024 * 1024L;
   private static long MB = 1024 * 1024L;
-  private IoTDBConfig config = IoTDBDescriptor.getInstance().getConfig();
 
   @Test
-  public void test() throws BufferWriteProcessorException {
+  public void test() {
     BasicMemController memController = BasicMemController.getInstance();
     if (memController instanceof RecordMemController) {
       testRecordMemController();

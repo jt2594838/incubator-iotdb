@@ -30,6 +30,7 @@ import org.apache.iotdb.db.qp.physical.PhysicalPlan;
 import org.apache.iotdb.db.qp.physical.crud.AggregationPlan;
 import org.apache.iotdb.db.qp.physical.crud.FillQueryPlan;
 import org.apache.iotdb.db.qp.physical.crud.GroupByPlan;
+import org.apache.iotdb.db.qp.physical.crud.InsertPlan;
 import org.apache.iotdb.db.qp.physical.crud.QueryPlan;
 import org.apache.iotdb.db.qp.physical.sys.AuthorPlan;
 import org.apache.iotdb.db.qp.physical.sys.MetadataPlan;
@@ -69,10 +70,14 @@ public class PhysicalPlanTest {
     Path path4 = new Path(
         new StringContainer(new String[]{"root", "vehicle", "d4", "s1"},
             SystemConstant.PATH_SEPARATOR));
-    processor.getExecutor().insert(path1, 10, "10");
-    processor.getExecutor().insert(path2, 10, "10");
-    processor.getExecutor().insert(path3, 10, "10");
-    processor.getExecutor().insert(path4, 10, "10");
+    processor.getExecutor().insert(new InsertPlan(path1.getDevice(), 10, path1.getMeasurement(),
+        "10"));
+    processor.getExecutor().insert(new InsertPlan(path2.getDevice(), 10, path2.getMeasurement(),
+        "10"));
+    processor.getExecutor().insert(new InsertPlan(path3.getDevice(), 10, path3.getMeasurement(),
+        "10"));
+    processor.getExecutor().insert(new InsertPlan(path4.getDevice(), 10, path4.getMeasurement(),
+        "10"));
   }
 
   @Test
@@ -188,19 +193,19 @@ public class PhysicalPlanTest {
   public void testFill3() {
     String sqlStr = "SELECT s1 FROM root.vehicle.d1 WHERE time = 5000 Fill(int32[linear, 5m], boolean[previous])";
     try {
-      PhysicalPlan plan = processor.parseSQLToPhysicalPlan(sqlStr);
+      processor.parseSQLToPhysicalPlan(sqlStr);
     } catch (Exception e) {
       assertTrue(true);
     }
   }
 
   @Test
-  public void testFill4() throws QueryProcessorException, ArgsErrorException {
+  public void testFill4() {
     String sqlStr = "SELECT s1 FROM root.vehicle.d1 WHERE time > 5000 Fill(int32[linear], boolean[previous])";
     try {
-      PhysicalPlan plan = processor.parseSQLToPhysicalPlan(sqlStr);
+      processor.parseSQLToPhysicalPlan(sqlStr);
     } catch (Exception e) {
-      assertEquals("Only \"=\" can be used in fill function", e.getMessage().toString());
+      assertEquals("Only \"=\" can be used in fill function", e.getMessage());
     }
   }
 

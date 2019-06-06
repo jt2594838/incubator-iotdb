@@ -323,4 +323,12 @@ public class RestorableTsFileIOWriter extends TsFileIOWriter {
     return out;
   }
 
+  public long getMetaSize() {
+    long size = 0;
+    for (ChunkGroupMetaData chunkGroupMetaData : chunkGroupMetaDataList) {
+      size += chunkGroupMetaData.getChunkMetaDataList().size() *
+          ChunkMetaData.estimatedObjectByteSize;
+    }
+    return size;
+  }
 }

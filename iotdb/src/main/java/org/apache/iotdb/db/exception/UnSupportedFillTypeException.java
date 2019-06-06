@@ -18,7 +18,7 @@
  */
 package org.apache.iotdb.db.exception;
 
-public class UnSupportedFillTypeException extends DeltaEngineRunningException {
+public class UnSupportedFillTypeException extends QueryEngineRunningException {
 
   public UnSupportedFillTypeException(String message, Throwable cause) {
     super(message, cause);
