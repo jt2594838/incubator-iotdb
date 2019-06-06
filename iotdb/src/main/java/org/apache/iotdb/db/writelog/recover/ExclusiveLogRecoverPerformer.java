@@ -48,7 +48,7 @@ public class ExclusiveLogRecoverPerformer implements RecoverPerformer {
 
   public static final String RECOVER_FLAG_NAME = "recover-flag";
   public static final String RECOVER_SUFFIX = "-recover";
-  public static final String FLAG_SEPERATOR = "-";
+  private static final String FLAG_SEPARATOR = "-";
   private static final Logger logger = LoggerFactory.getLogger(ExclusiveLogRecoverPerformer.class);
   // The two fields can be made static only because the recovery is a serial process.
   private static RAFLogReader rafLogReader = new RAFLogReader();
@@ -107,7 +107,7 @@ public class ExclusiveLogRecoverPerformer implements RecoverPerformer {
     String flagName = flagFile.getName();
     recoveryFlagPath = flagFile.getPath();
     // the flag name is like "recover-flag-{flagType}"
-    String[] parts = flagName.split(FLAG_SEPERATOR);
+    String[] parts = flagName.split(FLAG_SEPARATOR);
     if (parts.length != 3) {
       logger.error("Log node {} invalid recover flag name {}", writeLogNode.getIdentifier(),
           flagName);
@@ -149,7 +149,7 @@ public class ExclusiveLogRecoverPerformer implements RecoverPerformer {
   private void setFlag(RecoverStage stage) {
     if (recoveryFlagPath == null) {
       recoveryFlagPath =
-          writeLogNode.getLogDirectory() + File.separator + RECOVER_FLAG_NAME + FLAG_SEPERATOR
+          writeLogNode.getLogDirectory() + File.separator + RECOVER_FLAG_NAME + FLAG_SEPARATOR
               + stage.name();
       try {
         File flagFile = new File(recoveryFlagPath);
@@ -164,8 +164,8 @@ public class ExclusiveLogRecoverPerformer implements RecoverPerformer {
       }
     } else {
       File flagFile = new File(recoveryFlagPath);
-      recoveryFlagPath = recoveryFlagPath.replace(FLAG_SEPERATOR + currStage.name(),
-          FLAG_SEPERATOR + stage.name());
+      recoveryFlagPath = recoveryFlagPath.replace(FLAG_SEPARATOR + currStage.name(),
+          FLAG_SEPARATOR + stage.name());
       if (!flagFile.renameTo(new File(recoveryFlagPath))) {
         logger
             .error("Log node {} cannot update flag at stage {}", writeLogNode.getLogDirectory(),
@@ -279,9 +279,8 @@ public class ExclusiveLogRecoverPerformer implements RecoverPerformer {
     try {
       DatabaseEngineFactory.getCurrent().closeStorageGroup(writeLogNode.getFileNodeName());
     } catch (StorageGroupManagerException e) {
-      logger.error("Log node {} cannot perform flush after replaying logs! Because {}",
-          writeLogNode.getIdentifier(), e.getMessage());
-      throw new RecoverException(e);
+      throw new RecoverException(String.format("Log node %s cannot perform flush"
+          + " after replaying logs!", writeLogNode.getIdentifier()), e);
     }
     currStage = CLEAN_UP;
     setFlag(REPLAY_LOG);

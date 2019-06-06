@@ -476,7 +476,7 @@ public class SyncServiceImpl implements SyncService.Iface {
         try {
           if (!databaseEngine.appendFileToStorageGroup(storageGroup, fileNode, path)) {
             // it is a file with overflow data
-            if (config.isUpdate_historical_data_possibility()) {
+            if (config.isUpdateHistoricalDataPossibility()) {
               loadOldData(path);
             } else {
               List<String> overlapFiles = databaseEngine.getOverlapFilesFromStorageGroup(

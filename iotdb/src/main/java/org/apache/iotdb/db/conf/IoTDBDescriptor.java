@@ -51,6 +51,7 @@ public class IoTDBDescriptor {
    */
   private void loadProps() {
     InputStream inputStream;
+
     String url = System.getProperty(IoTDBConstant.IOTDB_CONF, null);
     if (url == null) {
       url = System.getProperty(IoTDBConstant.IOTDB_HOME, null);
@@ -86,13 +87,13 @@ public class IoTDBDescriptor {
           .parseBoolean(properties.getProperty("enable_stat_monitor",
                   Boolean.toString(conf.isEnableStatMonitor()))));
       conf.setBackLoopPeriodSec(Integer
-          .parseInt(properties.getProperty("back_loop_period_sec",
+          .parseInt(properties.getProperty("back_loop_period_in_second",
                   Integer.toString(conf.getBackLoopPeriodSec()))));
       int statMonitorDetectFreqSec = Integer.parseInt(
-          properties.getProperty("stat_monitor_detect_freq_sec",
+          properties.getProperty("stat_monitor_detect_freq_in_second",
                   Integer.toString(conf.getStatMonitorDetectFreqSec())));
       int statMonitorRetainIntervalSec = Integer.parseInt(
-          properties.getProperty("stat_monitor_retain_interval_sec",
+          properties.getProperty("stat_monitor_retain_interval_in_second",
                   Integer.toString(conf.getStatMonitorRetainIntervalSec())));
       // the conf value must > default value, or may cause system unstable
       if (conf.getStatMonitorDetectFreqSec() < statMonitorDetectFreqSec) {
@@ -112,10 +113,10 @@ public class IoTDBDescriptor {
       conf.setRpcAddress(properties.getProperty("rpc_address", conf.getRpcAddress()));
 
       conf.setRpcPort(Integer.parseInt(properties.getProperty("rpc_port",
-              Integer.toString(conf.getRpcPort()))));
+          Integer.toString(conf.getRpcPort()))));
 
       conf.setEnableWal(Boolean.parseBoolean(properties.getProperty("enable_wal",
-              Boolean.toString(conf.isEnableWal()))));
+          Boolean.toString(conf.isEnableWal()))));
 
       conf.setFlushWalThreshold(Integer
           .parseInt(properties.getProperty("flush_wal_threshold",
@@ -158,7 +159,7 @@ public class IoTDBDescriptor {
           properties.getProperty("period_time_for_merge_in_second",
               Long.toString(conf.getPeriodTimeForMerge())).trim()));
       conf.setEnableTimingCloseAndMerge(Boolean.parseBoolean(properties
-          .getProperty("enable_timing_close_and_Merge",
+          .getProperty("enable_timing_close_and_merge",
                   Boolean.toString(conf.isEnableTimingCloseAndMerge())).trim()));
 
       conf.setMemThresholdWarning((long) (Runtime.getRuntime().maxMemory() * Double.parseDouble(
@@ -169,7 +170,7 @@ public class IoTDBDescriptor {
                   Long.toString(conf.getMemThresholdDangerous())).trim())));
 
       conf.setMemMonitorInterval(Long
-          .parseLong(properties.getProperty("mem_monitor_interval",
+          .parseLong(properties.getProperty("mem_monitor_interval_in_ms",
                   Long.toString(conf.getMemMonitorInterval())).trim()));
 
       conf.setMemControllerType(Integer
@@ -198,7 +199,7 @@ public class IoTDBDescriptor {
       conf.setSyncServerPort(Integer
           .parseInt(properties.getProperty("sync_server_port",
                   Integer.toString(conf.getSyncServerPort())).trim()));
-      conf.setUpdate_historical_data_possibility(Boolean.parseBoolean(
+      conf.setUpdateHistoricalDataPossibility(Boolean.parseBoolean(
           properties.getProperty("update_historical_data_possibility",
                   Boolean.toString(conf.isSyncEnable()))));
       conf.setIpWhiteList(properties.getProperty("IP_white_list", conf.getIpWhiteList()));

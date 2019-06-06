@@ -173,7 +173,7 @@ public abstract class Processor {
    * @return a future that returns true if successfully, otherwise false.
    * @throws IOException
    */
-  public abstract Future<Boolean> flush() throws IOException;
+  public abstract Future<Boolean> flush() throws IOException, TsFileProcessorException;
 
   /**
    * Close the processor.<br>

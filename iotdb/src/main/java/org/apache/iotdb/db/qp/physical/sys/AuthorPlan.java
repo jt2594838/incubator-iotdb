@@ -32,6 +32,7 @@ import org.apache.iotdb.tsfile.read.common.Path;
 
 public class AuthorPlan extends PhysicalPlan {
 
+  private static final long serialVersionUID = 6501894026593590182L;
   private final AuthorOperator.AuthorType authorType;
   private String userName;
   private String roleName;
@@ -98,21 +99,27 @@ public class AuthorPlan extends PhysicalPlan {
         this.setOperatorType(Operator.OperatorType.REVOKE_USER_ROLE);
         break;
       case LIST_USER_PRIVILEGE:
+        this.setQuery(true);
         this.setOperatorType(Operator.OperatorType.LIST_USER_PRIVILEGE);
         break;
       case LIST_ROLE_PRIVILEGE:
+        this.setQuery(true);
         this.setOperatorType(Operator.OperatorType.LIST_ROLE_PRIVILEGE);
         break;
       case LIST_USER_ROLES:
+        this.setQuery(true);
         this.setOperatorType(Operator.OperatorType.LIST_USER_ROLES);
         break;
       case LIST_ROLE_USERS:
+        this.setQuery(true);
         this.setOperatorType(Operator.OperatorType.LIST_ROLE_USERS);
         break;
       case LIST_USER:
+        this.setQuery(true);
         this.setOperatorType(Operator.OperatorType.LIST_USER);
         break;
       case LIST_ROLE:
+        this.setQuery(true);
         this.setOperatorType(Operator.OperatorType.LIST_ROLE);
         break;
       default:

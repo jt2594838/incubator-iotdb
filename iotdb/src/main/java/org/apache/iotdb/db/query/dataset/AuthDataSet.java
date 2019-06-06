@@ -16,15 +16,38 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.iotdb.db.writelog.transfer;
+
+package org.apache.iotdb.db.query.dataset;
 
 import java.io.IOException;
-import org.apache.iotdb.db.auth.AuthException;
-import org.apache.iotdb.db.qp.physical.PhysicalPlan;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
+import org.apache.iotdb.tsfile.read.common.Path;
+import org.apache.iotdb.tsfile.read.common.RowRecord;
+import org.apache.iotdb.tsfile.read.query.dataset.QueryDataSet;
 
-interface Codec<T extends PhysicalPlan> {
+public class AuthDataSet extends QueryDataSet {
 
-  byte[] encode(T t);
+  List<RowRecord> records = new ArrayList<>();
+  int index = 0;
 
-  T decode(byte[] bytes) throws IOException;
+  public AuthDataSet(List<Path> paths,
+      List<TSDataType> dataTypes) {
+    super(paths, dataTypes);
+  }
+
+  @Override
+  public boolean hasNext() throws IOException {
+    return index < records.size();
+  }
+
+  @Override
+  public RowRecord next() throws IOException {
+    return records.get(index++);
+  }
+
+  public void putRecord(RowRecord newRecord) {
+    records.add(newRecord);
+  }
 }

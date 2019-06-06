@@ -23,15 +23,13 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import org.apache.iotdb.db.engine.tsfiledata.TsFileProcessor;
-import org.apache.iotdb.db.exception.StorageGroupManagerException;
 import org.apache.iotdb.db.exception.PathErrorException;
 import org.apache.iotdb.db.exception.ProcessorException;
+import org.apache.iotdb.db.exception.StorageGroupManagerException;
 import org.apache.iotdb.db.query.context.QueryContext;
-import org.apache.iotdb.db.query.executor.groupby.GroupByWithOnlyTimeFilterDataSetDataSet;
-import org.apache.iotdb.db.query.executor.groupby.GroupByWithValueFilterDataSetDataSet;
+import org.apache.iotdb.db.query.dataset.groupby.GroupByWithOnlyTimeFilterDataSet;
+import org.apache.iotdb.db.query.dataset.groupby.GroupByWithValueFilterDataSet;
 import org.apache.iotdb.db.query.fill.IFill;
-import org.apache.iotdb.tsfile.exception.NotImplementedException;
 import org.apache.iotdb.tsfile.exception.filter.QueryFilterOptimizationException;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.read.common.Path;
@@ -49,13 +47,9 @@ import org.apache.iotdb.tsfile.utils.Pair;
  * Query entrance class of IoTDB query process. All query clause will be transformed to physical
  * plan, physical plan will be executed by EngineQueryRouter.
  */
-public class EngineQueryRouter {
+public class EngineQueryRouter implements IEngineQueryRouter{
 
-
-
-  /**
-   * execute physical plan.
-   */
+  @Override
   public QueryDataSet query(QueryExpression queryExpression, QueryContext context)
       throws StorageGroupManagerException {
 
@@ -85,9 +79,7 @@ public class EngineQueryRouter {
     }
   }
 
-  /**
-   * execute aggregation query.
-   */
+  @Override
   public QueryDataSet aggregate(List<Path> selectedSeries, List<String> aggres,
       IExpression expression, QueryContext context) throws QueryFilterOptimizationException,
       StorageGroupManagerException, IOException, PathErrorException, ProcessorException {
@@ -109,17 +101,7 @@ public class EngineQueryRouter {
     }
   }
 
-  /**
-   * execute groupBy query.
-   *
-   * @param selectedSeries select path list
-   * @param aggres aggregation name list
-   * @param expression filter expression
-   * @param unit time granularity for interval partitioning, unit is ms.
-   * @param origin the datum time point for interval division is divided into a time interval for
-   * each TimeUnit time from this point forward and backward.
-   * @param intervals time intervals, closed interval.
-   */
+  @Override
   public QueryDataSet groupBy(List<Path> selectedSeries, List<String> aggres,
       IExpression expression, long unit, long origin, List<Pair<Long, Long>> intervals,
       QueryContext context)
@@ -166,12 +148,12 @@ public class EngineQueryRouter {
     IExpression optimizedExpression = ExpressionOptimizer.getInstance()
         .optimize(expression, selectedSeries);
     if (optimizedExpression.getType() == ExpressionType.GLOBAL_TIME) {
-      GroupByWithOnlyTimeFilterDataSetDataSet groupByEngine = new GroupByWithOnlyTimeFilterDataSetDataSet(
+      GroupByWithOnlyTimeFilterDataSet groupByEngine = new GroupByWithOnlyTimeFilterDataSet(
           nextJobId, selectedSeries, unit, origin, mergedIntervalList);
       groupByEngine.initGroupBy(context, aggres, optimizedExpression);
       return groupByEngine;
     } else {
-      GroupByWithValueFilterDataSetDataSet groupByEngine = new GroupByWithValueFilterDataSetDataSet(
+      GroupByWithValueFilterDataSet groupByEngine = new GroupByWithValueFilterDataSet(
           nextJobId,
           selectedSeries, unit, origin, mergedIntervalList);
       groupByEngine.initGroupBy(context, aggres, optimizedExpression);
@@ -179,13 +161,7 @@ public class EngineQueryRouter {
     }
   }
 
-  /**
-   * execute fill query.
-   *
-   * @param fillPaths select path list
-   * @param queryTime timestamp
-   * @param fillType type IFill map
-   */
+  @Override
   public QueryDataSet fill(List<Path> fillPaths, long queryTime, Map<TSDataType, IFill> fillType,
       QueryContext context)
       throws StorageGroupManagerException, PathErrorException, IOException {

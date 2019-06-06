@@ -16,7 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.apache.iotdb.db.query.executor;
 
 import java.io.IOException;
@@ -42,20 +41,20 @@ import org.apache.iotdb.tsfile.read.filter.basic.Filter;
 import org.apache.iotdb.tsfile.read.query.dataset.QueryDataSet;
 
 /**
- * IoTDB query executor with global time filter.
+ * IoTDB query executor of Stand-alone version with global time filter.
  */
-public class EngineExecutorWithoutTimeGenerator {
+class EngineExecutorWithoutTimeGenerator extends AbstractExecutorWithoutTimeGenerator {
 
   private QueryExpression queryExpression;
 
-  public EngineExecutorWithoutTimeGenerator(QueryExpression queryExpression) {
+  EngineExecutorWithoutTimeGenerator(QueryExpression queryExpression) {
     this.queryExpression = queryExpression;
   }
 
   /**
-   * with global time filter.
+   * without filter or with global time filter.
    */
-  public QueryDataSet executeWithGlobalTimeFilter(QueryContext context)
+  QueryDataSet executeWithGlobalTimeFilter(QueryContext context)
       throws StorageGroupManagerException {
 
     Filter timeFilter = ((GlobalTimeExpression) queryExpression.getExpression()).getFilter();
@@ -67,38 +66,7 @@ public class EngineExecutorWithoutTimeGenerator {
         .beginQueryOfGivenQueryPaths(context.getJobId(), queryExpression.getSelectedSeries());
 
     for (Path path : queryExpression.getSelectedSeries()) {
-
-      QueryDataSource queryDataSource = QueryResourceManager.getInstance().getQueryDataSource(path,
-          context);
-
-      // add data type
-      try {
-        dataTypes.add(MManager.getInstance().getSeriesType(path.getFullPath()));
-      } catch (PathErrorException e) {
-        throw new StorageGroupManagerException(e);
-      }
-
-      // sequence reader for one sealed tsfile
-      SequenceDataReader tsFilesReader;
-      try {
-        tsFilesReader = new SequenceDataReader(queryDataSource.getSeqDataSource(),
-            timeFilter, context);
-      } catch (IOException e) {
-        throw new StorageGroupManagerException(e);
-      }
-
-      // unseq reader for all chunk groups in unSeqFile
-      PriorityMergeReader unSeqMergeReader;
-      try {
-        unSeqMergeReader = SeriesReaderFactory.getInstance()
-            .createUnSeqMergeReader(queryDataSource.getOverflowSeriesDataSource(),
-                context, timeFilter);
-      } catch (IOException e) {
-        throw new StorageGroupManagerException(e);
-      }
-
-      // merge sequence data with unsequence data.
-      readersOfSelectedSeries.add(new AllDataReader(tsFilesReader, unSeqMergeReader));
+      readersOfSelectedSeries.add(createSeriesReader(context, path, dataTypes, timeFilter));
     }
 
     try {
@@ -112,7 +80,7 @@ public class EngineExecutorWithoutTimeGenerator {
   /**
    * without filter.
    */
-  public QueryDataSet executeWithoutFilter(QueryContext context)
+  QueryDataSet executeWithoutFilter(QueryContext context)
       throws StorageGroupManagerException {
 
     List<IPointReader> readersOfSelectedSeries = new ArrayList<>();

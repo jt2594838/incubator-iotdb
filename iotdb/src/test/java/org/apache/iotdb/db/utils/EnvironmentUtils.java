@@ -104,8 +104,6 @@ public class EnvironmentUtils {
     cleanDir(config.getMetadataDir());
     // delete wal
     cleanDir(config.getWalFolder());
-    // delete derby
-    cleanDir(config.getDerbyHome());
     // delete index
     cleanDir(config.getIndexFileDir());
     // delete data

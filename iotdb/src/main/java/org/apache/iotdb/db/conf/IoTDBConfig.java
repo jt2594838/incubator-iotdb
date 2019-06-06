@@ -23,6 +23,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.iotdb.db.metadata.MManager;
+import org.apache.iotdb.db.service.TSServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,13 +31,13 @@ public class IoTDBConfig {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IoTDBConfig.class);
   public static final String CONFIG_NAME = "iotdb-engine.properties";
-  public static final String DEFAULT_DATA_DIR = "data";
-  public static final String DEFAULT_SYS_DIR = "system";
-  public static final String DEFAULT_TSFILE_DIR = "settled";
-  public static final String DEFAULT_OVERFLOW_DIR = "overflow";
-  public static final String MULT_DIR_STRATEGY_PREFIX =
+  private static final String DEFAULT_DATA_DIR = "data";
+  private static final String DEFAULT_SYS_DIR = "system";
+  static final String DEFAULT_TSFILE_DIR = "settled";
+  static final String DEFAULT_OVERFLOW_DIR = "overflow";
+  private static final String MULT_DIR_STRATEGY_PREFIX =
       "org.apache.iotdb.db.conf.directories.strategy.";
-  public static final String DEFAULT_MULT_DIR_STRATEGY = "MaxDiskUsableSpaceFirstStrategy";
+  private static final String DEFAULT_MULT_DIR_STRATEGY = "MaxDiskUsableSpaceFirstStrategy";
 
   private String rpcAddress = "0.0.0.0";
   /**
@@ -109,11 +110,6 @@ public class IoTDBConfig {
   private String metadataDir = "schema";
 
   /**
-   * Data directory of derby data.
-   */
-  private String derbyHome = "derby";
-
-  /**
    * Data directory of Write ahead log folder.
    */
   private String walFolder = "wal";
@@ -122,11 +118,6 @@ public class IoTDBConfig {
    * Data directory for index files (KV-match indexes).
    */
   private String indexFileDir = "index";
-
-  /**
-   * Temporary directory for temporary files of read (External Sort). TODO: unused field
-   */
-  private String readTmpFileDir = "readTmp";
 
   /**
    * The maximum concurrent thread number for merging overflow. When the value <=0 or > CPU core
@@ -270,7 +261,7 @@ public class IoTDBConfig {
    * data, choose "true". 2. It's more likely not to update historical data or you don't know
    * exactly, choose "false".
    */
-  private boolean update_historical_data_possibility = false;
+  private boolean updateHistoricalDataPossibility = false;
   private String ipWhiteList = "0.0.0.0/0";
   /**
    * Examining period of cache file reader : 100 seconds.
@@ -284,6 +275,11 @@ public class IoTDBConfig {
    */
   private long queryMemoryLimit = 5242880;
 
+  /**
+   * Replace implementation class of JDBC service
+   */
+  private String rpcImplClassName = TSServiceImpl.class.getName();
+
   public IoTDBConfig() {
     // empty constructor
   }
@@ -292,16 +288,32 @@ public class IoTDBConfig {
     return zoneID;
   }
 
-  public String getZoneIDString() {
-    return getZoneID().toString();
-  }
-
-  public void updatePath() {
+  void updatePath() {
     confirmMultiDirStrategy();
 
     preUpdatePath();
 
     // update the paths of subdirectories in the dataDir
+    updateDataDir();
+
+
+    // update the paths of subdirectories in the sysDir
+    if (getSysDir().length() > 0 && !getSysDir().endsWith(File.separator)) {
+      setSysDir(getSysDir() + File.separatorChar);
+    }
+    setStorageGroupDir(getSysDir() + getStorageGroupDir());
+    setMetadataDir(getSysDir() + getMetadataDir());
+
+    // update the paths of subdirectories in the walDir
+    if (getWalDir().length() > 0 && !getWalDir().endsWith(File.separator)) {
+      setWalDir(getWalDir() + File.separatorChar);
+    }
+    setWalFolder(getWalDir() + getWalFolder());
+
+    setIndexFileDir(getDataDir() + getIndexFileDir());
+  }
+
+  private void updateDataDir() {
     if (getDataDir().length() > 0 && !getDataDir().endsWith(File.separator)) {
       setDataDir(getDataDir() + File.separatorChar);
     }
@@ -327,22 +339,6 @@ public class IoTDBConfig {
 
       getBufferWriteDirs()[i] = getDataDir() + getBufferWriteDirs()[i];
     }
-
-    // update the paths of subdirectories in the sysDir
-    if (getSysDir().length() > 0 && !getSysDir().endsWith(File.separator)) {
-      setSysDir(getSysDir() + File.separatorChar);
-    }
-    setStorageGroupDir(getSysDir() + getStorageGroupDir());
-    setMetadataDir(getSysDir() + getMetadataDir());
-
-    // update the paths of subdirectories in the walDir
-    if (getWalDir().length() > 0 && !getWalDir().endsWith(File.separator)) {
-      setWalDir(getWalDir() + File.separatorChar);
-    }
-    setWalFolder(getWalDir() + getWalFolder());
-
-    setDerbyHome(getSysDir() + getDerbyHome());
-    setIndexFileDir(getDataDir() + getIndexFileDir());
   }
 
   /*
@@ -438,7 +434,7 @@ public class IoTDBConfig {
     return rpcAddress;
   }
 
-  public void setRpcAddress(String rpcAddress) {
+  void setRpcAddress(String rpcAddress) {
     this.rpcAddress = rpcAddress;
   }
 
@@ -446,7 +442,7 @@ public class IoTDBConfig {
     return rpcPort;
   }
 
-  public void setRpcPort(int rpcPort) {
+  void setRpcPort(int rpcPort) {
     this.rpcPort = rpcPort;
   }
 
@@ -486,23 +482,23 @@ public class IoTDBConfig {
     return dataDir;
   }
 
-  public void setDataDir(String dataDir) {
+  void setDataDir(String dataDir) {
     this.dataDir = dataDir;
   }
 
-  public String getSysDir() {
+  String getSysDir() {
     return sysDir;
   }
 
-  public void setSysDir(String sysDir) {
+  void setSysDir(String sysDir) {
     this.sysDir = sysDir;
   }
 
-  public String getWalDir() {
+  String getWalDir() {
     return walDir;
   }
 
-  public void setWalDir(String walDir) {
+  void setWalDir(String walDir) {
     this.walDir = walDir;
   }
 
@@ -510,7 +506,7 @@ public class IoTDBConfig {
     return overflowDataDirs;
   }
 
-  public void setOverflowDataDirs(String[] overflowDataDirs) {
+  void setOverflowDataDirs(String[] overflowDataDirs) {
     this.overflowDataDirs = overflowDataDirs;
   }
 
@@ -518,11 +514,11 @@ public class IoTDBConfig {
     return storageGroupDir;
   }
 
-  public void setStorageGroupDir(String storageGroupDir) {
+  private void setStorageGroupDir(String storageGroupDir) {
     this.storageGroupDir = storageGroupDir;
   }
 
-  public void setBufferWriteDirs(String[] bufferWriteDirs) {
+  void setBufferWriteDirs(String[] bufferWriteDirs) {
     this.bufferWriteDirs = bufferWriteDirs;
   }
 
@@ -530,7 +526,7 @@ public class IoTDBConfig {
     return multDirStrategyClassName;
   }
 
-  public void setMultDirStrategyClassName(String multDirStrategyClassName) {
+  void setMultDirStrategyClassName(String multDirStrategyClassName) {
     this.multDirStrategyClassName = multDirStrategyClassName;
   }
 
@@ -538,23 +534,15 @@ public class IoTDBConfig {
     return metadataDir;
   }
 
-  public void setMetadataDir(String metadataDir) {
+  private void setMetadataDir(String metadataDir) {
     this.metadataDir = metadataDir;
-  }
-
-  public String getDerbyHome() {
-    return derbyHome;
-  }
-
-  public void setDerbyHome(String derbyHome) {
-    this.derbyHome = derbyHome;
   }
 
   public String getWalFolder() {
     return walFolder;
   }
 
-  public void setWalFolder(String walFolder) {
+  private void setWalFolder(String walFolder) {
     this.walFolder = walFolder;
   }
 
@@ -562,31 +550,23 @@ public class IoTDBConfig {
     return indexFileDir;
   }
 
-  public void setIndexFileDir(String indexFileDir) {
+  private void setIndexFileDir(String indexFileDir) {
     this.indexFileDir = indexFileDir;
-  }
-
-  public String getReadTmpFileDir() {
-    return readTmpFileDir;
-  }
-
-  public void setReadTmpFileDir(String readTmpFileDir) {
-    this.readTmpFileDir = readTmpFileDir;
   }
 
   public int getMergeConcurrentThreads() {
     return mergeConcurrentThreads;
   }
 
-  public void setMergeConcurrentThreads(int mergeConcurrentThreads) {
+  void setMergeConcurrentThreads(int mergeConcurrentThreads) {
     this.mergeConcurrentThreads = mergeConcurrentThreads;
   }
 
-  public int getMaxOpenFolder() {
+  int getMaxOpenFolder() {
     return maxOpenFolder;
   }
 
-  public void setMaxOpenFolder(int maxOpenFolder) {
+  void setMaxOpenFolder(int maxOpenFolder) {
     this.maxOpenFolder = maxOpenFolder;
   }
 
@@ -594,7 +574,7 @@ public class IoTDBConfig {
     return fetchSize;
   }
 
-  public void setFetchSize(int fetchSize) {
+  void setFetchSize(int fetchSize) {
     this.fetchSize = fetchSize;
   }
 
@@ -602,15 +582,11 @@ public class IoTDBConfig {
     return writeInstanceThreshold;
   }
 
-  public void setWriteInstanceThreshold(int writeInstanceThreshold) {
-    this.writeInstanceThreshold = writeInstanceThreshold;
-  }
-
   public long getPeriodTimeForFlush() {
     return periodTimeForFlush;
   }
 
-  public void setPeriodTimeForFlush(long periodTimeForFlush) {
+  void setPeriodTimeForFlush(long periodTimeForFlush) {
     this.periodTimeForFlush = periodTimeForFlush;
   }
 
@@ -618,7 +594,7 @@ public class IoTDBConfig {
     return periodTimeForMerge;
   }
 
-  public void setPeriodTimeForMerge(long periodTimeForMerge) {
+  void setPeriodTimeForMerge(long periodTimeForMerge) {
     this.periodTimeForMerge = periodTimeForMerge;
   }
 
@@ -626,7 +602,7 @@ public class IoTDBConfig {
     return enableTimingCloseAndMerge;
   }
 
-  public void setEnableTimingCloseAndMerge(boolean enableTimingCloseAndMerge) {
+  void setEnableTimingCloseAndMerge(boolean enableTimingCloseAndMerge) {
     this.enableTimingCloseAndMerge = enableTimingCloseAndMerge;
   }
 
@@ -634,11 +610,11 @@ public class IoTDBConfig {
     return concurrentFlushThread;
   }
 
-  public void setConcurrentFlushThread(int concurrentFlushThread) {
+  void setConcurrentFlushThread(int concurrentFlushThread) {
     this.concurrentFlushThread = concurrentFlushThread;
   }
 
-  public void setZoneID(ZoneId zoneID) {
+  void setZoneID(ZoneId zoneID) {
     this.zoneID = zoneID;
   }
 
@@ -662,7 +638,7 @@ public class IoTDBConfig {
     return memMonitorInterval;
   }
 
-  public void setMemMonitorInterval(long memMonitorInterval) {
+  void setMemMonitorInterval(long memMonitorInterval) {
     this.memMonitorInterval = memMonitorInterval;
   }
 
@@ -670,11 +646,11 @@ public class IoTDBConfig {
     return memControllerType;
   }
 
-  public void setMemControllerType(int memControllerType) {
+  void setMemControllerType(int memControllerType) {
     this.memControllerType = memControllerType;
   }
 
-  public long getBufferwriteMetaSizeThreshold() {
+  long getBufferwriteMetaSizeThreshold() {
     return bufferwriteMetaSizeThreshold;
   }
 
@@ -694,7 +670,7 @@ public class IoTDBConfig {
     return overflowMetaSizeThreshold;
   }
 
-  public void setOverflowMetaSizeThreshold(long overflowMetaSizeThreshold) {
+  void setOverflowMetaSizeThreshold(long overflowMetaSizeThreshold) {
     this.overflowMetaSizeThreshold = overflowMetaSizeThreshold;
   }
 
@@ -718,7 +694,7 @@ public class IoTDBConfig {
     return enableSmallFlush;
   }
 
-  public void setEnableSmallFlush(boolean enableSmallFlush) {
+  void setEnableSmallFlush(boolean enableSmallFlush) {
     this.enableSmallFlush = enableSmallFlush;
   }
 
@@ -726,7 +702,7 @@ public class IoTDBConfig {
     return smallFlushInterval;
   }
 
-  public void setSmallFlushInterval(long smallFlushInterval) {
+  void setSmallFlushInterval(long smallFlushInterval) {
     this.smallFlushInterval = smallFlushInterval;
   }
 
@@ -750,7 +726,7 @@ public class IoTDBConfig {
     return statMonitorDetectFreqSec;
   }
 
-  public void setStatMonitorDetectFreqSec(int statMonitorDetectFreqSec) {
+  void setStatMonitorDetectFreqSec(int statMonitorDetectFreqSec) {
     this.statMonitorDetectFreqSec = statMonitorDetectFreqSec;
   }
 
@@ -758,15 +734,15 @@ public class IoTDBConfig {
     return statMonitorRetainIntervalSec;
   }
 
-  public void setStatMonitorRetainIntervalSec(int statMonitorRetainIntervalSec) {
+  void setStatMonitorRetainIntervalSec(int statMonitorRetainIntervalSec) {
     this.statMonitorRetainIntervalSec = statMonitorRetainIntervalSec;
   }
 
-  public int getExternalSortThreshold() {
+  int getExternalSortThreshold() {
     return externalSortThreshold;
   }
 
-  public void setExternalSortThreshold(int externalSortThreshold) {
+  void setExternalSortThreshold(int externalSortThreshold) {
     this.externalSortThreshold = externalSortThreshold;
   }
 
@@ -774,7 +750,7 @@ public class IoTDBConfig {
     return mManagerCacheSize;
   }
 
-  public void setmManagerCacheSize(int mManagerCacheSize) {
+  void setmManagerCacheSize(int mManagerCacheSize) {
     this.mManagerCacheSize = mManagerCacheSize;
   }
 
@@ -782,7 +758,7 @@ public class IoTDBConfig {
     return maxLogEntrySize;
   }
 
-  public void setMaxLogEntrySize(int maxLogEntrySize) {
+  void setMaxLogEntrySize(int maxLogEntrySize) {
     this.maxLogEntrySize = maxLogEntrySize;
   }
 
@@ -790,7 +766,7 @@ public class IoTDBConfig {
     return isSyncEnable;
   }
 
-  public void setSyncEnable(boolean syncEnable) {
+  void setSyncEnable(boolean syncEnable) {
     isSyncEnable = syncEnable;
   }
 
@@ -798,7 +774,7 @@ public class IoTDBConfig {
     return syncServerPort;
   }
 
-  public void setSyncServerPort(int syncServerPort) {
+  void setSyncServerPort(int syncServerPort) {
     this.syncServerPort = syncServerPort;
   }
 
@@ -806,16 +782,16 @@ public class IoTDBConfig {
     return languageVersion;
   }
 
-  public void setLanguageVersion(String languageVersion) {
+  void setLanguageVersion(String languageVersion) {
     this.languageVersion = languageVersion;
   }
 
-  public boolean isUpdate_historical_data_possibility() {
-    return update_historical_data_possibility;
+  public boolean isUpdateHistoricalDataPossibility() {
+    return updateHistoricalDataPossibility;
   }
 
-  public void setUpdate_historical_data_possibility(boolean update_historical_data_possibility) {
-    this.update_historical_data_possibility = update_historical_data_possibility;
+  void setUpdateHistoricalDataPossibility(boolean updateHistoricalDataPossibility) {
+    this.updateHistoricalDataPossibility = updateHistoricalDataPossibility;
   }
 
   public String getIpWhiteList() {
@@ -834,11 +810,16 @@ public class IoTDBConfig {
     this.cacheFileReaderClearPeriod = cacheFileReaderClearPeriod;
   }
 
-  public long getQueryMemoryLimit() {
+  long getQueryMemoryLimit() {
     return queryMemoryLimit;
   }
 
-  public void setQueryMemoryLimit(long queryMemoryLimit) {
+  void setQueryMemoryLimit(long queryMemoryLimit) {
     this.queryMemoryLimit = queryMemoryLimit;
   }
+
+  public String getRpcImplClassName() {
+    return rpcImplClassName;
+  }
+
 }

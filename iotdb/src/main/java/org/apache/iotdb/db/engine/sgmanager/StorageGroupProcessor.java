@@ -235,7 +235,7 @@ public class StorageGroupProcessor extends Processor implements IStatistic {
   }
 
   @Override
-  public Future<Boolean> flush() throws IOException {
+  public Future<Boolean> flush() throws IOException, TsFileProcessorException {
     Future<Boolean> tsFileFuture = tsFileProcessor.flush();
     Future<Boolean> overflowFuture = overflowProcessor.flush();
 

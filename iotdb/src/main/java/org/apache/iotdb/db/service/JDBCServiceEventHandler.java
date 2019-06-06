@@ -47,11 +47,7 @@ public class JDBCServiceEventHandler implements TServerEventHandler {
 
   @Override
   public void deleteContext(ServerContext arg0, TProtocol arg1, TProtocol arg2) {
-    try {
-      serviceImpl.handleClientExit();
-    } catch (TException e) {
-      LOGGER.error("failed to clear client status", e);
-    }
+    serviceImpl.handleClientExit();
   }
 
   @Override

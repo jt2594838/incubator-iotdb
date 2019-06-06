@@ -19,19 +19,15 @@
 package org.apache.iotdb.db.service;
 
 import java.io.IOException;
-import java.util.List;
 import org.apache.iotdb.db.concurrent.IoTDBDefaultThreadExceptionHandler;
 import org.apache.iotdb.db.conf.IoTDBConfig;
 import org.apache.iotdb.db.conf.IoTDBConstant;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
 import org.apache.iotdb.db.engine.DatabaseEngineFactory;
 import org.apache.iotdb.db.engine.memcontrol.BasicMemController;
-import org.apache.iotdb.db.exception.StorageGroupManagerException;
-import org.apache.iotdb.db.exception.PathErrorException;
 import org.apache.iotdb.db.exception.RecoverException;
 import org.apache.iotdb.db.exception.StartupException;
 import org.apache.iotdb.db.exception.builder.ExceptionBuilder;
-import org.apache.iotdb.db.metadata.MManager;
 import org.apache.iotdb.db.monitor.StatMonitor;
 import org.apache.iotdb.db.sync.receiver.SyncServiceManager;
 import org.apache.iotdb.db.writelog.manager.MultiFileLogNodeManager;
@@ -46,7 +42,7 @@ public class IoTDB implements IoTDBMBean {
       IoTDBConstant.JMX_TYPE, "IoTDB");
   private RegisterManager registerManager = new RegisterManager();
 
-  public static final IoTDB getInstance() {
+  public static IoTDB getInstance() {
     return IoTDBHolder.INSTANCE;
   }
 
@@ -61,8 +57,8 @@ public class IoTDB implements IoTDBMBean {
       checks.verify();
     } catch (StartupException e) {
       // TODO: what are some checks
-      LOGGER.error("{}: failed to start because some checks failed. {}",
-          IoTDBConstant.GLOBAL_DB_NAME, e.getMessage());
+      LOGGER.error("{}: failed to start because some checks failed. ",
+          IoTDBConstant.GLOBAL_DB_NAME, e);
       return;
     }
     try {
@@ -113,7 +109,7 @@ public class IoTDB implements IoTDBMBean {
     LOGGER.info("IoTDB is set up.");
   }
 
-  public void deactivate() {
+  private void deactivate() {
     LOGGER.info("Deactivating IoTDB...");
     registerManager.deregisterAll();
     JMXService.deregisterMBean(mbeanName);
@@ -121,7 +117,7 @@ public class IoTDB implements IoTDBMBean {
   }
 
   @Override
-  public void stop() throws StorageGroupManagerException {
+  public void stop() {
     deactivate();
   }
 

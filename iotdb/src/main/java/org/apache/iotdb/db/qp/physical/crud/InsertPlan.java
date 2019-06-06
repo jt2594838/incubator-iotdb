@@ -28,6 +28,7 @@ import org.apache.iotdb.tsfile.read.common.Path;
 
 public class InsertPlan extends PhysicalPlan {
 
+  private static final long serialVersionUID = 6102845312368561515L;
   private String deviceId;
   private String[] measurements;
   private String[] values;
@@ -108,6 +109,11 @@ public class InsertPlan extends PhysicalPlan {
 
   public void setValues(String[] values) {
     this.values = values;
+  }
+
+  @Override
+  public int hashCode() {
+    return super.hashCode();
   }
 
   @Override

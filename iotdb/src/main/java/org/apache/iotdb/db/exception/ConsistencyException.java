@@ -16,20 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.iotdb.db.writelog.transfer;
+package org.apache.iotdb.db.exception;
 
-/**
- * To avoid conflict with org.apache.iotdb.tsfiledb.qp.constant.SQLConstant.Operator.
- */
-public class SystemLogOperator {
+public class ConsistencyException extends Exception {
 
-  private SystemLogOperator(){}
+  public ConsistencyException() {
+  }
 
-  public static final int INSERT = 0;
-  public static final int UPDATE = 1;
-  public static final int DELETE = 2;
-  public static final int METADATA = 3;
-  public static final int AUTHOR = 4;
-  public static final int LOADDATA = 5;
-  public static final int PROPERTY = 6;
+  public ConsistencyException(String message) {
+    super(message);
+  }
+
+  public ConsistencyException(String message, Throwable cause) {
+    super(message, cause);
+  }
+
+  public ConsistencyException(Throwable cause) {
+    super(cause);
+  }
 }

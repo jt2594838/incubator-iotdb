@@ -205,7 +205,7 @@ public class TsFileProcessorTest {
           processor.flush();
           processor.writeUnlock();
         }
-      } catch (IOException e) {
+      } catch (IOException | TsFileProcessorException e) {
         // we will break out.
         LOGGER.error(e.getMessage());
         exception[1] = true;

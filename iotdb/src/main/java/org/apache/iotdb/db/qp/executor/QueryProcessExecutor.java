@@ -34,8 +34,10 @@ import org.apache.iotdb.db.qp.physical.crud.FillQueryPlan;
 import org.apache.iotdb.db.qp.physical.crud.GroupByPlan;
 import org.apache.iotdb.db.qp.physical.crud.InsertPlan;
 import org.apache.iotdb.db.qp.physical.crud.QueryPlan;
+import org.apache.iotdb.db.qp.physical.sys.AuthorPlan;
 import org.apache.iotdb.db.query.context.QueryContext;
 import org.apache.iotdb.db.query.executor.EngineQueryRouter;
+import org.apache.iotdb.db.query.executor.IEngineQueryRouter;
 import org.apache.iotdb.db.query.fill.IFill;
 import org.apache.iotdb.tsfile.exception.filter.QueryFilterOptimizationException;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
@@ -45,23 +47,33 @@ import org.apache.iotdb.tsfile.read.expression.QueryExpression;
 import org.apache.iotdb.tsfile.read.query.dataset.QueryDataSet;
 import org.apache.iotdb.tsfile.utils.Pair;
 
-public abstract class QueryProcessExecutor {
+public abstract class QueryProcessExecutor implements IQueryProcessExecutor {
 
   protected ThreadLocal<Integer> fetchSize = new ThreadLocal<>();
-  protected EngineQueryRouter queryRouter = new EngineQueryRouter();
+  IEngineQueryRouter queryRouter = new EngineQueryRouter();
 
-  public QueryProcessExecutor() {
+  protected QueryProcessExecutor() {
   }
 
-  /**
-   * process query plan of qp layer, construct queryDataSet.
-   * @param queryPlan QueryPlan
-   * @return QueryDataSet
-   */
-  public QueryDataSet processQuery(QueryPlan queryPlan, QueryContext context)
-      throws IOException, StorageGroupManagerException, PathErrorException,
-      QueryFilterOptimizationException, ProcessorException {
+  @Override
+  public QueryDataSet processQuery(PhysicalPlan queryPlan, QueryContext context)
+      throws IOException, PathErrorException,
+      QueryFilterOptimizationException, ProcessorException, StorageGroupManagerException {
 
+    if (queryPlan instanceof QueryPlan) {
+      return processDataQuery((QueryPlan) queryPlan, context);
+    } else if (queryPlan instanceof AuthorPlan) {
+      return processAuthorQuery((AuthorPlan) queryPlan, context);
+    } else {
+      throw new ProcessorException(String.format("Unrecognized query plan %s", queryPlan));
+    }
+  }
+
+  protected abstract QueryDataSet processAuthorQuery(AuthorPlan plan, QueryContext context)
+      throws ProcessorException;
+
+  private QueryDataSet processDataQuery(QueryPlan queryPlan, QueryContext context)
+      throws StorageGroupManagerException, QueryFilterOptimizationException, PathErrorException, ProcessorException, IOException {
     QueryExpression queryExpression = QueryExpression.create().setSelectSeries(queryPlan.getPaths())
         .setExpression(queryPlan.getExpression());
     if (queryPlan instanceof GroupByPlan) {
@@ -73,7 +85,7 @@ public abstract class QueryProcessExecutor {
 
     if (queryPlan instanceof AggregationPlan) {
       return aggregate(queryPlan.getPaths(), queryPlan.getAggregations(),
-          ((AggregationPlan) queryPlan).getExpression(), context);
+          queryPlan.getExpression(), context);
     }
 
     if (queryPlan instanceof FillQueryPlan) {
@@ -84,14 +96,7 @@ public abstract class QueryProcessExecutor {
     return queryRouter.query(queryExpression, context);
   }
 
-  public abstract TSDataType getSeriesType(Path fullPath) throws PathErrorException;
-
-  public abstract boolean judgePathExists(Path fullPath);
-
-  public boolean processNonQuery(PhysicalPlan plan) throws ProcessorException {
-    throw new UnsupportedOperationException();
-  }
-
+  @Override
   public int getFetchSize() {
     if (fetchSize.get() == null) {
       return 100;
@@ -99,6 +104,7 @@ public abstract class QueryProcessExecutor {
     return fetchSize.get();
   }
 
+  @Override
   public void setFetchSize(int fetchSize) {
     this.fetchSize.set(fetchSize);
   }
@@ -113,7 +119,7 @@ public abstract class QueryProcessExecutor {
       StorageGroupManagerException, QueryFilterOptimizationException;
 
   public abstract QueryDataSet fill(List<Path> fillPaths, long queryTime, Map<TSDataType,
-      IFill> fillTypes, QueryContext context)
+        IFill> fillTypes, QueryContext context)
       throws ProcessorException, IOException, PathErrorException, StorageGroupManagerException;
 
   /**
@@ -135,6 +141,7 @@ public abstract class QueryProcessExecutor {
    * @param deleteTime end time in delete command
    * @return - whether the operator is successful.
    */
+  @Override
   public boolean delete(List<Path> paths, long deleteTime) throws ProcessorException {
     try {
       boolean result = true;
@@ -152,14 +159,13 @@ public abstract class QueryProcessExecutor {
               String.format("TimeSeries %s does not exist and cannot be delete its data", onePath));
         }
       }
-      List<String> fullPath = new ArrayList<>();
-      fullPath.addAll(pathSet);
+      List<String> fullPath = new ArrayList<>(pathSet);
       for (String path : fullPath) {
         result &= delete(new Path(path), deleteTime);
       }
       return result;
     } catch (PathErrorException e) {
-      throw new ProcessorException(e.getMessage());
+      throw new ProcessorException(e);
     }
   }
 
@@ -170,7 +176,7 @@ public abstract class QueryProcessExecutor {
    * @param deleteTime end time in delete command
    * @return - whether the operator is successful.
    */
-  protected abstract boolean delete(Path path, long deleteTime) throws ProcessorException;
+   public abstract boolean delete(Path path, long deleteTime) throws ProcessorException;
 
   /**
    * execute insert command and return whether the operator is successful.

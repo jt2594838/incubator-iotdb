@@ -32,6 +32,7 @@ import org.apache.iotdb.db.qp.physical.PhysicalPlan;
 import org.apache.iotdb.db.qp.physical.crud.DeletePlan;
 import org.apache.iotdb.db.qp.physical.crud.InsertPlan;
 import org.apache.iotdb.db.qp.physical.crud.UpdatePlan;
+import org.apache.iotdb.db.qp.physical.sys.AuthorPlan;
 import org.apache.iotdb.db.query.context.QueryContext;
 import org.apache.iotdb.db.query.fill.IFill;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
@@ -152,7 +153,7 @@ public class MemIntQpExecutor extends QueryProcessExecutor {
   }
 
   @Override
-  protected boolean delete(Path path, long deleteTime) {
+  public boolean delete(Path path, long deleteTime) {
     if (!demoMemDataBase.containsKey(path.toString())) {
       return true;
     }
@@ -167,6 +168,11 @@ public class MemIntQpExecutor extends QueryProcessExecutor {
     series.data = delResult;
     LOG.info("delete series:{}, timestamp:{}", path, deleteTime);
     return true;
+  }
+
+  @Override
+  public int insert(Path path, long insertTime, String value) {
+    return 0;
   }
 
   @Override
@@ -187,6 +193,11 @@ public class MemIntQpExecutor extends QueryProcessExecutor {
         add(fullPath);
       }
     };
+  }
+
+  @Override
+  protected QueryDataSet processAuthorQuery(AuthorPlan plan, QueryContext context) {
+    return null;
   }
 
   private class TestSeries {
