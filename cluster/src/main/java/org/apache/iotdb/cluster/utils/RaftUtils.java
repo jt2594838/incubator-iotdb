@@ -79,8 +79,6 @@ import org.slf4j.LoggerFactory;
 
 public class RaftUtils {
 
-  private static final ClusterConfig CLUSTER_CONFIG = ClusterDescriptor.getInstance().getConfig();
-
   private static final Logger LOGGER = LoggerFactory.getLogger(RaftUtils.class);
   private static final Server server = Server.getInstance();
   private static final Router router = Router.getInstance();
@@ -765,10 +763,8 @@ public class RaftUtils {
         int[] nums1 = convertIPToNums(o1);
         int[] nums2 = convertIPToNums(o2);
         for (int i = 0; i < Math.min(nums1.length, nums2.length); i++) {
-          if (nums1[i] == nums2[i]) {
-            continue;
-          } else {
-            return ((Integer) nums1[i]).compareTo(nums2[i]);
+          if (nums1[i] != nums2[i]) {
+            return Integer.compare(nums1[i], nums2[i]);
           }
         }
         return 0;

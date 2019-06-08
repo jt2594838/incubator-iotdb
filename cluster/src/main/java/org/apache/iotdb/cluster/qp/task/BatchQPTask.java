@@ -109,7 +109,7 @@ public class BatchQPTask extends MultiQPTask {
         batchResult.setAllSuccessful(false);
       }
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LOGGER.error("Execute batch statement occurs error.", ex);
     } finally {
       lock.unlock();
     }

@@ -72,6 +72,7 @@ public class ClusterGroupByDataSetWithOnlyTimeFilter extends GroupByWithOnlyTime
   /**
    * init reader and aggregate function.
    */
+  @Override
   public void initGroupBy(QueryContext context, List<String> aggres, IExpression expression)
       throws FileNodeManagerException, PathErrorException, ProcessorException, IOException {
     initAggreFuction(aggres);

@@ -27,8 +27,8 @@ import org.apache.iotdb.tsfile.read.common.BatchData;
 /**
  * BatchReader by timestamp for cluster which is used in query node.
  */
-public class ClusterSelectSeriesBatchReaderByTimestamp extends
-    AbstractClusterSelectSeriesBatchReader {
+public class ClusterSelectSeriesBatchReaderByTimestamp implements
+    IClusterSelectSeriesBatchReader {
 
   /**
    * Reader

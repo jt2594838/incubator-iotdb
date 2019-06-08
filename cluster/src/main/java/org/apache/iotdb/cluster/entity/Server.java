@@ -97,13 +97,13 @@ public class Server {
   private RegisterManager registerManager = new RegisterManager();
 
   public static void main(String[] args)
-      throws ProcessorException, InterruptedException, RaftConnectionException, FileNodeManagerException {
+      throws ProcessorException, RaftConnectionException, FileNodeManagerException {
     Server server = Server.getInstance();
     server.start();
   }
 
   public void start()
-      throws ProcessorException, InterruptedException, RaftConnectionException, FileNodeManagerException {
+      throws ProcessorException, RaftConnectionException, FileNodeManagerException {
 
     /** Stand-alone version of IoTDB, be careful to replace the internal JDBC Server with a cluster version **/
     iotdb = new IoTDB();

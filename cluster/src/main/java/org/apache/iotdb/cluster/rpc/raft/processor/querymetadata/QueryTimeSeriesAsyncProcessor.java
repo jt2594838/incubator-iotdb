@@ -23,7 +23,6 @@ import com.alipay.remoting.BizContext;
 import com.alipay.sofa.jraft.Status;
 import com.alipay.sofa.jraft.closure.ReadIndexClosure;
 import org.apache.iotdb.cluster.config.ClusterConsistencyLevel;
-import org.apache.iotdb.cluster.config.ClusterConstant;
 import org.apache.iotdb.cluster.entity.raft.DataPartitionRaftHolder;
 import org.apache.iotdb.cluster.entity.raft.RaftService;
 import org.apache.iotdb.cluster.rpc.raft.processor.BasicAsyncUserProcessor;

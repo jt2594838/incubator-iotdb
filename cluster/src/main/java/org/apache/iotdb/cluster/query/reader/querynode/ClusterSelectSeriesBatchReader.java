@@ -30,8 +30,8 @@ import org.apache.iotdb.tsfile.read.common.BatchData;
 /**
  * BatchReader without time generator for cluster which is used in query node.
  */
-public class ClusterSelectSeriesBatchReader extends
-    AbstractClusterSelectSeriesBatchReader {
+public class ClusterSelectSeriesBatchReader implements
+    IClusterSelectSeriesBatchReader {
 
   /**
    * Data type

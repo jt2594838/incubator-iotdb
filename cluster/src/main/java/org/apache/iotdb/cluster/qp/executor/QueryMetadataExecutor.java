@@ -259,7 +259,6 @@ public class QueryMetadataExecutor extends AbstractQPExecutor {
             success = true;
           } catch (RaftConnectionException e1) {
             LOGGER.debug("Query metadata task for group {} to node {} fail.", groupId, nextNode);
-            continue;
           }
         }
         LOGGER.debug("The final result for query metadata task is {}", success);

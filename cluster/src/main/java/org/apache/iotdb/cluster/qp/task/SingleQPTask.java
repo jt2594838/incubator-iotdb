@@ -20,8 +20,6 @@ package org.apache.iotdb.cluster.qp.task;
 
 import org.apache.iotdb.cluster.rpc.raft.request.BasicRequest;
 import org.apache.iotdb.cluster.rpc.raft.response.BasicResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Process task(s) for only one raft group, which is used for operations except for querying data.

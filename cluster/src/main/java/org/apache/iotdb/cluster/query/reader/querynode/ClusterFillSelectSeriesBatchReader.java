@@ -21,7 +21,6 @@ package org.apache.iotdb.cluster.query.reader.querynode;
 import java.io.IOException;
 import org.apache.iotdb.cluster.query.common.ClusterNullableBatchData;
 import org.apache.iotdb.db.query.reader.IPointReader;
-import org.apache.iotdb.db.utils.TimeValuePair;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.read.common.BatchData;
 

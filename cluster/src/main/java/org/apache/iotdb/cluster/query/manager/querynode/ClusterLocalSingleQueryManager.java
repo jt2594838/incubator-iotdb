@@ -28,7 +28,7 @@ import org.apache.iotdb.cluster.concurrent.pool.QueryTimerThreadManager;
 import org.apache.iotdb.cluster.config.ClusterConstant;
 import org.apache.iotdb.cluster.query.PathType;
 import org.apache.iotdb.cluster.query.factory.ClusterSeriesReaderFactory;
-import org.apache.iotdb.cluster.query.reader.querynode.AbstractClusterSelectSeriesBatchReader;
+import org.apache.iotdb.cluster.query.reader.querynode.IClusterSelectSeriesBatchReader;
 import org.apache.iotdb.cluster.query.reader.querynode.ClusterFillSelectSeriesBatchReader;
 import org.apache.iotdb.cluster.query.reader.querynode.ClusterFilterSeriesBatchReaderEntity;
 import org.apache.iotdb.cluster.query.reader.querynode.ClusterGroupBySelectSeriesBatchReaderEntity;
@@ -417,9 +417,9 @@ public class ClusterLocalSingleQueryManager implements IClusterLocalSingleQueryM
     long targetQueryRounds = request.getQueryRounds();
     if (targetQueryRounds != this.queryRound) {
       this.queryRound = targetQueryRounds;
-      List<AbstractClusterSelectSeriesBatchReader> readers = selectReaderEntity.getAllReaders();
+      List<IClusterSelectSeriesBatchReader> readers = selectReaderEntity.getAllReaders();
       List<BatchData> batchDataList = new ArrayList<>();
-      for (AbstractClusterSelectSeriesBatchReader reader : readers) {
+      for (IClusterSelectSeriesBatchReader reader : readers) {
         batchDataList.add(reader.nextBatch(request.getBatchTimestamp()));
       }
       cachedBatchDataResult = batchDataList;
@@ -443,7 +443,7 @@ public class ClusterLocalSingleQueryManager implements IClusterLocalSingleQueryM
   private List<BatchData> readSelectSeriesBatchData(List<Integer> seriesIndexs) throws IOException {
     List<BatchData> batchDataList = new ArrayList<>();
     for (int index : seriesIndexs) {
-      AbstractClusterSelectSeriesBatchReader reader = selectReaderEntity.getReaderByIndex(index);
+      IClusterSelectSeriesBatchReader reader = selectReaderEntity.getReaderByIndex(index);
       batchDataList.add(reader.nextBatch());
     }
     return batchDataList;

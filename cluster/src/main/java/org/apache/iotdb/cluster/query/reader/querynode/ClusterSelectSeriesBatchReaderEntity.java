@@ -34,7 +34,7 @@ public class ClusterSelectSeriesBatchReaderEntity {
   /**
    * All select readers
    */
-  private List<AbstractClusterSelectSeriesBatchReader> readers;
+  private List<IClusterSelectSeriesBatchReader> readers;
 
   public ClusterSelectSeriesBatchReaderEntity() {
     paths = new ArrayList<>();
@@ -45,15 +45,15 @@ public class ClusterSelectSeriesBatchReaderEntity {
     this.paths.add(path);
   }
 
-  public void addReaders(AbstractClusterSelectSeriesBatchReader reader) {
+  public void addReaders(IClusterSelectSeriesBatchReader reader) {
     this.readers.add(reader);
   }
 
-  public List<AbstractClusterSelectSeriesBatchReader> getAllReaders() {
+  public List<IClusterSelectSeriesBatchReader> getAllReaders() {
     return readers;
   }
 
-  public AbstractClusterSelectSeriesBatchReader getReaderByIndex(int index) {
+  public IClusterSelectSeriesBatchReader getReaderByIndex(int index) {
     return readers.get(index);
   }
 
