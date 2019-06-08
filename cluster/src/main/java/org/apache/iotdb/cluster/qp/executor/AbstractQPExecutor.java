@@ -22,10 +22,8 @@ import com.alipay.sofa.jraft.entity.PeerId;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.iotdb.cluster.config.ClusterConfig;
-import org.apache.iotdb.cluster.config.ClusterConsistencyLevel;
 import org.apache.iotdb.cluster.config.ClusterDescriptor;
 import org.apache.iotdb.cluster.entity.Server;
-import org.apache.iotdb.cluster.exception.ConsistencyLevelException;
 import org.apache.iotdb.cluster.exception.RaftConnectionException;
 import org.apache.iotdb.cluster.qp.task.QPTask;
 import org.apache.iotdb.cluster.qp.task.QPTask.TaskState;
@@ -96,14 +94,14 @@ public abstract class AbstractQPExecutor {
       throws InterruptedException, RaftConnectionException {
     PeerId firstNode = task.getTargetNode();
     RaftUtils.updatePeerIDOrder(firstNode, groupId);
-    BasicResponse response = null;
+    BasicResponse response;
     try {
       asyncSendSingleTask(task, taskRetryNum);
       response = syncGetSingleTaskRes(task, taskRetryNum, taskInfo, groupId, downNodeSet);
+      return response;
     } catch (RaftConnectionException ex) {
-      boolean success = false;
       downNodeSet.add(firstNode);
-      while (!success) {
+      while (true) {
         PeerId nextNode = null;
         try {
           nextNode = RaftUtils.getPeerIDInOrder(groupId);
@@ -115,22 +113,19 @@ public abstract class AbstractQPExecutor {
               nextNode);
           task.resetTask();
           task.setTargetNode(nextNode);
-          task.setTaskState(TaskState.INITIAL);
           asyncSendSingleTask(task, taskRetryNum);
           response = syncGetSingleTaskRes(task, taskRetryNum, taskInfo, groupId, downNodeSet);
           LOGGER.debug("{} task for group {} to node {} succeed.", taskInfo, groupId, nextNode);
-          success = true;
+          return response;
         } catch (RaftConnectionException e1) {
           LOGGER.debug("{} task for group {} to node {} fail.", taskInfo, groupId, nextNode);
           downNodeSet.add(nextNode);
         }
       }
-      LOGGER.debug("The final result for {} task is {}", taskInfo, success);
-      if (!success) {
-        throw ex;
-      }
+      throw new RaftConnectionException(String
+          .format("Can not %s in all nodes of group<%s>, please check cluster status.",
+              taskInfo, groupId));
     }
-    return response;
   }
 
   protected BasicResponse syncHandleSingleTaskGetRes(SingleQPTask task, int taskRetryNum, String taskInfo, String groupId)

@@ -321,7 +321,7 @@ public class TSServiceClusterImpl extends TSServiceImpl {
     contextMapLocal.get().put(req.queryId, context);
 
     queryManager.addSingleQuery(jobId, (QueryPlan) physicalPlan);
-    QueryDataSet queryDataSet = processor.getExecutor().processQuery((QueryPlan) physicalPlan,
+    QueryDataSet queryDataSet = processor.getExecutor().processQuery(physicalPlan,
         context);
     try {
       queryRet.get().put(statement, queryDataSet);

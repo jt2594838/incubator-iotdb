@@ -88,7 +88,7 @@ public class NonQueryExecutor extends AbstractQPExecutor {
       return handleNonQueryRequest(groupId, plan);
     } catch (RaftConnectionException e) {
       LOGGER.error(e.getMessage());
-      throw new ProcessorException("Raft connection occurs error.", e);
+      throw new ProcessorException(e.getMessage());
     } catch (InterruptedException | PathErrorException | IOException e) {
       throw new ProcessorException(e);
     }
@@ -327,7 +327,7 @@ public class NonQueryExecutor extends AbstractQPExecutor {
     } else {
       PeerId leader = RaftUtils.getLocalLeaderPeerID(groupId);
       qpTask.setTargetNode(leader);
-      return syncHandleSingleTask(qpTask, "non-query", groupId);
+      return syncHandleSingleTask(qpTask, "execute non-query", groupId);
     }
   }
 

@@ -73,7 +73,7 @@ public class ClusterRpcReaderUtils {
       }
     }
     throw new RaftConnectionException(
-        String.format("Can not init series reader in all nodes of group<%s>.", groupId));
+        String.format("Can not init series reader in all nodes of group<%s>, please check cluster status.", groupId));
   }
 
   /**

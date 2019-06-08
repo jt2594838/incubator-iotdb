@@ -180,7 +180,7 @@ public class BatchQPTask extends MultiQPTask {
    */
   private void executeRpcSubTask(SingleQPTask subTask, String groupId) {
     try {
-      executor.syncHandleSingleTask(subTask, "sub non-query", groupId);
+      executor.syncHandleSingleTask(subTask, "execute sub non-query", groupId);
       this.receive(subTask.getResponse());
     } catch (RaftConnectionException | InterruptedException e) {
       LOGGER.error("Async handle sub task failed.");

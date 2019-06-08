@@ -92,7 +92,7 @@ public class ClusterQueryRouter extends AbstractQueryRouter {
         return engineExecutor.execute(context);
       }
     } catch (QueryFilterOptimizationException | IOException | RaftConnectionException e) {
-      throw new FileNodeManagerException(e);
+      throw new FileNodeManagerException(e.getMessage());
     }
   }
 

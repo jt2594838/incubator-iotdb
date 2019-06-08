@@ -100,6 +100,7 @@ public abstract class QPTask {
 
   public void resetTask() {
     this.taskCountDownLatch = new CountDownLatch(taskNum);
+    this.taskState = TaskState.INITIAL;
   }
 
   public TaskState getTaskState() {

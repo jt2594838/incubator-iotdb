@@ -224,7 +224,6 @@ public class RaftNodeAsClientManager {
         qpTask.receive(response);
       } catch (RemotingException | InterruptedException e) {
         LOGGER.error(e.getMessage());
-        qpTask.setTaskState(TaskState.RAFT_CONNECTION_EXCEPTION);
         qpTask.receive(null);
       }
     }

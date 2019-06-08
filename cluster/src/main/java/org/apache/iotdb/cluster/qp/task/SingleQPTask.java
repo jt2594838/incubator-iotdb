@@ -28,8 +28,6 @@ import org.slf4j.LoggerFactory;
  */
 public class SingleQPTask extends QPTask {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(SingleQPTask.class);
-
   private static final int TASK_NUM = 1;
 
   public SingleQPTask(boolean isSyncTask, BasicRequest request) {
@@ -45,7 +43,7 @@ public class SingleQPTask extends QPTask {
     if(taskState != TaskState.EXCEPTION) {
       this.response = response;
       if(response == null){
-        LOGGER.error("Response is null");
+        this.taskState = TaskState.RAFT_CONNECTION_EXCEPTION;
       } else if (response.isRedirected()) {
         this.taskState = TaskState.REDIRECT;
       } else {

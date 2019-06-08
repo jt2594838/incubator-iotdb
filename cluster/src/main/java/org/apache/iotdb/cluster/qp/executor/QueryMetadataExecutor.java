@@ -29,7 +29,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import org.apache.iotdb.cluster.config.ClusterConfig;
 import org.apache.iotdb.cluster.config.ClusterConsistencyLevel;
-import org.apache.iotdb.cluster.config.ClusterConstant;
 import org.apache.iotdb.cluster.entity.raft.MetadataRaftHolder;
 import org.apache.iotdb.cluster.entity.raft.RaftService;
 import org.apache.iotdb.cluster.exception.RaftConnectionException;
@@ -68,7 +67,6 @@ public class QueryMetadataExecutor extends AbstractQPExecutor {
   private static final Logger LOGGER = LoggerFactory.getLogger(QueryMetadataExecutor.class);
   private static final String DOUB_SEPARATOR = "\\.";
   private static final char SINGLE_SEPARATOR = '.';
-  private static final String RAFT_CONNECTION_ERROR = "Raft connection occurs error.";
 
   public QueryMetadataExecutor() {
     super();
@@ -151,13 +149,13 @@ public class QueryMetadataExecutor extends AbstractQPExecutor {
           holder);
       res.addAll(queryTimeSeries(task, pathList, groupId));
     } catch (RaftConnectionException e) {
-      throw new ProcessorException(RAFT_CONNECTION_ERROR, e);
+      throw new ProcessorException(e.getMessage());
     }
   }
 
   private List<List<String>> queryTimeSeries(SingleQPTask task, List<String> pathList, String groupId)
       throws InterruptedException, RaftConnectionException {
-    BasicResponse response = syncHandleSingleTaskGetRes(task, 0, "show timeseries " + pathList, groupId);
+    BasicResponse response = syncHandleSingleTaskGetRes(task, 0, "query timeseries " + pathList, groupId);
     return response == null ? new ArrayList<>()
         : ((QueryTimeSeriesResponse) response).getTimeSeries();
   }
@@ -266,7 +264,10 @@ public class QueryMetadataExecutor extends AbstractQPExecutor {
         }
         LOGGER.debug("The final result for query metadata task is {}", success);
         if (!success) {
-          throw new ProcessorException(RAFT_CONNECTION_ERROR, e);
+          throw new ProcessorException(String
+              .format(
+                  "Can not query metadata in all nodes of group<%s>, please check cluster status.",
+                  groupId));
         }
       }
     }
@@ -316,7 +317,7 @@ public class QueryMetadataExecutor extends AbstractQPExecutor {
             holder);
         dataType = querySeriesType(task, path, groupId);
       } catch (RaftConnectionException e) {
-        throw new ProcessorException(RAFT_CONNECTION_ERROR, e);
+        throw new ProcessorException(e.getMessage());
       }
     }
     return dataType;
@@ -377,7 +378,7 @@ public class QueryMetadataExecutor extends AbstractQPExecutor {
           .debug("Send get paths for {} task for group {} to node {}.", pathList, groupId, holder);
       res.addAll(queryPaths(task, pathList, groupId));
     } catch (RaftConnectionException e) {
-      throw new ProcessorException(RAFT_CONNECTION_ERROR, e);
+      throw new ProcessorException(e.getMessage());
     }
   }
 
