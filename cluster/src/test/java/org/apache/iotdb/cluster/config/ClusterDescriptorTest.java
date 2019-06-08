@@ -54,8 +54,8 @@ public class ClusterDescriptorTest {
   private String testVNodesNew = "4";
   private String testClientNumNew = "400000";
   private String testQueueLenNew = "300000";
-  private String testMetadataConsistencyNew = "2";
-  private String testDataConsistencyNew = "4";
+  private String testMetadataConsistencyNew = String.valueOf(ClusterConsistencyLevel.STRONG.ordinal());
+  private String testDataConsistencyNew = String.valueOf(ClusterConsistencyLevel.STRONG.ordinal());
   private String testConcurrentQPTaskThreadNew = "6";
   private String testConcurrentRaftTaskThreadNew = "11";
 

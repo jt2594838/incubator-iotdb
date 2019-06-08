@@ -148,13 +148,19 @@ public class ClusterDescriptor {
           .parseInt(properties.getProperty("max_queue_num_of_inner_rpc_client",
               Integer.toString(conf.getMaxQueueNumOfQPTask()))));
 
-      conf.setReadMetadataConsistencyLevel(Integer
-          .parseInt(properties.getProperty("read_metadata_consistency_level",
-              Integer.toString(conf.getReadMetadataConsistencyLevel()))));
+      String readMetadataLevelName = properties.getProperty("read_metadata_consistency_level", "");
+      int readMetadataLevel = ClusterConsistencyLevel.getLevel(readMetadataLevelName);
+      if(readMetadataLevel == ClusterConsistencyLevel.UNSUPPORT_LEVEL){
+        readMetadataLevel = ClusterConsistencyLevel.STRONG.ordinal();
+      }
+      conf.setReadMetadataConsistencyLevel(readMetadataLevel);
 
-      conf.setReadDataConsistencyLevel(Integer
-          .parseInt(properties.getProperty("read_data_consistency_level",
-              Integer.toString(conf.getReadDataConsistencyLevel()))));
+      String readDataLevelName = properties.getProperty("read_data_consistency_level", "");
+      int readDataLevel = ClusterConsistencyLevel.getLevel(readDataLevelName);
+      if(readDataLevel == ClusterConsistencyLevel.UNSUPPORT_LEVEL){
+        readDataLevel = ClusterConsistencyLevel.STRONG.ordinal();
+      }
+      conf.setReadDataConsistencyLevel(readDataLevel);
 
       conf.setConcurrentQPSubTaskThread(Integer
           .parseInt(properties.getProperty("concurrent_qp_sub_task_thread",

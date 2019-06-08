@@ -126,7 +126,7 @@ public class ClusterQueryProcessExecutor extends AbstractQPExecutor implements I
   public List<String> getAllPaths(String originPath)
       throws PathErrorException {
     try {
-      LOGGER.debug("read metadata level :" + getReadMetadataConsistencyLevel());
+      LOGGER.debug(String.format("read metadata level :%d", getReadMetadataConsistencyLevel()));
       return queryMetadataExecutor.processPathsQuery(originPath);
     } catch (InterruptedException | ProcessorException e) {
       throw new PathErrorException(e.getMessage());

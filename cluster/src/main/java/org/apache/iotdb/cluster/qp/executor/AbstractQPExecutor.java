@@ -22,6 +22,7 @@ import com.alipay.sofa.jraft.entity.PeerId;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.iotdb.cluster.config.ClusterConfig;
+import org.apache.iotdb.cluster.config.ClusterConsistencyLevel;
 import org.apache.iotdb.cluster.config.ClusterDescriptor;
 import org.apache.iotdb.cluster.entity.Server;
 import org.apache.iotdb.cluster.exception.ConsistencyLevelException;
