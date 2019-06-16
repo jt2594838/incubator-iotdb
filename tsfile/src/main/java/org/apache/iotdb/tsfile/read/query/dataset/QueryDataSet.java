@@ -32,6 +32,10 @@ public abstract class QueryDataSet {
   protected List<Path> paths;
   protected List<TSDataType> dataTypes;
 
+  public QueryDataSet() {
+
+  }
+
   public QueryDataSet(List<Path> paths, List<TSDataType> dataTypes) {
     this.paths = paths;
     this.dataTypes = dataTypes;
@@ -62,6 +66,8 @@ public abstract class QueryDataSet {
   public void setDataTypes(List<TSDataType> dataTypes) {
     this.dataTypes = dataTypes;
   }
+
+  public void close() {}
 
   protected Field getField(Object value, TSDataType dataType) {
     Field field = new Field(dataType);

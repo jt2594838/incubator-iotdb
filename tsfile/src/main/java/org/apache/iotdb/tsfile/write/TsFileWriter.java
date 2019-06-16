@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author kangrong
  */
-public class TsFileWriter implements AutoCloseable{
+public class TsFileWriter implements AutoCloseable, ITsFileWriter{
 
   private static final Logger LOG = LoggerFactory.getLogger(TsFileWriter.class);
   /**
@@ -224,13 +224,13 @@ public class TsFileWriter implements AutoCloseable{
    * @throws IOException exception in IO
    * @throws WriteProcessException exception in write process
    */
-  public boolean write(TSRecord record) throws IOException, WriteProcessException {
+  public void write(TSRecord record) throws IOException, WriteProcessException {
     // make sure the ChunkGroupWriter for this TSRecord exist
     checkIsTimeSeriesExist(record);
     // get corresponding ChunkGroupWriter and write this TSRecord
     groupWriters.get(record.deviceId).write(record.time, record.dataPointList);
     ++recordCount;
-    return checkMemorySizeAndMayFlushGroup();
+    checkMemorySizeAndMayFlushGroup();
   }
 
   /**

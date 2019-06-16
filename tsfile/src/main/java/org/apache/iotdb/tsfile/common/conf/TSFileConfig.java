@@ -140,6 +140,8 @@ public class TSFileConfig {
    */
   public static String endian = "LITTLE_ENDIAN";
 
+  public static int paraPreFetchNum = 50;
+
   /**
    * only can be used by TsFileDescriptor.
    */

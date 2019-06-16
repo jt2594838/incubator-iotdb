@@ -57,4 +57,14 @@ public class RowRecord {
   public List<Field> getFields() {
     return fields;
   }
+
+  @Override
+  public int hashCode() {
+    return super.hashCode();
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    return this == obj;
+  }
 }
