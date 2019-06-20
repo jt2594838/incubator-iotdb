@@ -1,6 +1,7 @@
 package org.apache.iotdb.tsfile.para.benchmark;
 
 import java.util.NoSuchElementException;
+import java.util.Random;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.write.record.TSRecord;
 import org.apache.iotdb.tsfile.write.record.datapoint.DataPoint;
@@ -11,6 +12,7 @@ public class UniformLoadGenerator implements LoadGenerator {
   private int sensorNum;
   private int timeLimit;
   private TSDataType dataType;
+  private Random random;
 
   private long idx = 0;
 
@@ -19,6 +21,7 @@ public class UniformLoadGenerator implements LoadGenerator {
     this.sensorNum = config.getSensorNum();
     this.timeLimit = config.getPtNum();
     this.dataType = config.getDataType();
+    this.random = new Random(System.currentTimeMillis());
   }
 
   @Override
@@ -37,7 +40,7 @@ public class UniformLoadGenerator implements LoadGenerator {
     TSRecord record = new TSRecord(time, deviceId);
     for (int i = 0; i < sensorNum; i++) {
       String measurementId = "sensor" + i;
-      String value = String.valueOf(time);
+      String value = String.valueOf(random.nextDouble());
       record.addTuple(DataPoint.getDataPoint(dataType, measurementId, value));
     }
     idx++;
