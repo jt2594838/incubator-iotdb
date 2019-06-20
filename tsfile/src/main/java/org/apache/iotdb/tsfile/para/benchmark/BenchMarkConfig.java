@@ -7,21 +7,34 @@ import org.apache.iotdb.tsfile.file.metadata.enums.TSEncoding;
 import org.apache.iotdb.tsfile.para.HashFunc;
 
 public class BenchMarkConfig {
+
+  // use ParaTsFileReader/Writer or normal ones
   private boolean useParallel = true;
 
+  // paths of each file that belong to a ParaTsFile, can be absolute or relative(to the project
+  // root), if not using parallel, only the first path will be used
   private String[] filePaths = new String[] {
     "tsfile1","tsfile2","tsfile3","tsfile4","tsfile5"
   };
 
+  // total number of different deviceIds
   private int deviceNum = 100;
+  // number different measurement in each device
   private int sensorNum = 100;
+  // number of points in each timeseries
   private int ptNum = 100;
+  // datatype, choose one from TSDataType
   private TSDataType dataType = TSDataType.DOUBLE;
+  // encoding, choose one from TSEncoding
   private TSEncoding encoding = TSEncoding.PLAIN;
 
+  // how many devices are involved in a query
   private double deviceSelectRatio = 0.1;
+  // how many measurements of each device are involved in a query
   private double sensorSelectRatio = 0.1;
+  // each query will select the first timeSelectRatio data of each timeseries
   private double timeSelectRatio = 0.1;
+  // total number of queries
   private int queryNum = 100;
 
   private HashFunc hashFunc = String::hashCode;
