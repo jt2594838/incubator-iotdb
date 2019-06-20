@@ -139,6 +139,24 @@ public class ParaBenchMark {
     config.setFilePaths(filePaths.toArray(new String[0]));
   }
 
+  /**
+   * example:
+   *     ParaBenchMark benchMark = new ParaBenchMark();
+   *     BenchMarkConfig config = new BenchMarkConfig();
+   *
+   *     config.setUseParallel(true);
+   *     config.setDeviceSelectRatio(0.5);
+   *     config.setSensorSelectRatio(0.5);
+   *     config.setTimeSelectRatio(0.5);
+   *     config.setQueryNum(10);
+   *     config.setFilePaths(new String[] {
+   *         "file1", "file2", "file3", "file4"
+   *     });
+   *
+   *     benchMark.execute(config);
+   *     System.out.println(benchMark.genReportHeader());
+   *     System.out.println(benchMark.genReport(config));
+   */
   public static void main(String[] args) throws IOException, WriteProcessException {
     ParaBenchMark benchMark = new ParaBenchMark();
     BenchMarkConfig config = new BenchMarkConfig();
