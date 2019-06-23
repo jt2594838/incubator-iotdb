@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.iotdb.tsfile.exception.write.WriteProcessException;
+import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
+import org.apache.iotdb.tsfile.file.metadata.enums.TSEncoding;
 import org.apache.iotdb.tsfile.para.ParaTsFileReader;
 import org.apache.iotdb.tsfile.para.ParaTsFileWriter;
 import org.apache.iotdb.tsfile.para.ParaTsMeta;
@@ -178,7 +180,7 @@ public class ParaBenchMark {
   public static void main(String[] args) throws IOException, WriteProcessException {
     ParaBenchMark benchMark = new ParaBenchMark();
     BenchMarkConfig config = new BenchMarkConfig();
-    String reportPath = "report3.csv";
+    String reportPath = "report4.csv";
     String[] parentDirs = new String[] {
         "d:\\tsfiles", "f:\\tsfiles"
     };
@@ -192,46 +194,49 @@ public class ParaBenchMark {
     try (FileWriter writer = new FileWriter(reportPath)) {
       writer.write(benchMark.genReportHeader() + '\n');
 
-//      // mixed hdd and ssd
-//      for (int fileNumInSSD = 0; fileNumInSSD <= totalFileNum; fileNumInSSD++) {
-//        int[] fileNums = new int[] {
-//            totalFileNum - fileNumInSSD, fileNumInSSD
-//        };
-//        setFilePaths(config, fileNums, parentDirs);
-//        benchMark.execute(config);
-//        writer.write(benchMark.genReport(config) + '\n');
-//      }
-//
-//      config.setUseParallel(false);
-//      // single file in hdd
-//      setFilePaths(config, new int[]{1, 0}, parentDirs);
-//      benchMark.execute(config);
-//      writer.write(benchMark.genReport(config) + '\n');
-//
-//      // single file in ssd
-//      setFilePaths(config, new int[]{0, 1}, parentDirs);
-//      benchMark.execute(config);
-//      writer.write(benchMark.genReport(config) + '\n');
+      for (TSEncoding encoding : new TSEncoding[]{TSEncoding.PLAIN, TSEncoding.GORILLA}) {
+        config.setEncoding(encoding);
+        // mixed hdd and ssd
+        for (int fileNumInSSD = 0; fileNumInSSD <= totalFileNum; fileNumInSSD++) {
+          int[] fileNums = new int[] {
+              totalFileNum - fileNumInSSD, fileNumInSSD
+          };
+          setFilePaths(config, fileNums, parentDirs);
+          benchMark.execute(config);
+          writer.write(benchMark.genReport(config) + '\n');
+        }
 
-      config.setUseParallel(true);
-      // pure hdd
-      for (int fileNum = 1; fileNum <= totalFileNum; fileNum++) {
-        int[] fileNums = new int[] {
-            fileNum, 0
-        };
-        setFilePaths(config, fileNums, parentDirs);
+        config.setUseParallel(false);
+        // single file in hdd
+        setFilePaths(config, new int[]{1, 0}, parentDirs);
         benchMark.execute(config);
         writer.write(benchMark.genReport(config) + '\n');
-      }
 
-      // pure ssd
-      for (int fileNum = 1; fileNum <= totalFileNum; fileNum++) {
-        int[] fileNums = new int[] {
-            0, fileNum
-        };
-        setFilePaths(config, fileNums, parentDirs);
+        // single file in ssd
+        setFilePaths(config, new int[]{0, 1}, parentDirs);
         benchMark.execute(config);
         writer.write(benchMark.genReport(config) + '\n');
+
+        config.setUseParallel(true);
+        // pure hdd
+        for (int fileNum = 1; fileNum <= totalFileNum; fileNum++) {
+          int[] fileNums = new int[] {
+              fileNum, 0
+          };
+          setFilePaths(config, fileNums, parentDirs);
+          benchMark.execute(config);
+          writer.write(benchMark.genReport(config) + '\n');
+        }
+
+        // pure ssd
+        for (int fileNum = 1; fileNum <= totalFileNum; fileNum++) {
+          int[] fileNums = new int[] {
+              0, fileNum
+          };
+          setFilePaths(config, fileNums, parentDirs);
+          benchMark.execute(config);
+          writer.write(benchMark.genReport(config) + '\n');
+        }
       }
     }
   }
