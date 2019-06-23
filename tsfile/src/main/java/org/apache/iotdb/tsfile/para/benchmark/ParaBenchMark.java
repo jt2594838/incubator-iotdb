@@ -1,8 +1,6 @@
 package org.apache.iotdb.tsfile.para.benchmark;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,14 +25,17 @@ public class ParaBenchMark {
   private long totalPts;
 
   public void execute(BenchMarkConfig config) throws IOException, WriteProcessException {
-    if (config.isUseParallel()) {
-      executeParallel(config);
-    } else {
-      executeNonParallel(config);
-    }
-    totalPts = config.getDeviceNum() * config.getSensorNum() * config.getPtNum();
-    for (String filePath : config.getFilePaths()) {
-      new File(filePath).delete();
+    try {
+      if (config.isUseParallel()) {
+        executeParallel(config);
+      } else {
+        executeNonParallel(config);
+      }
+      totalPts = config.getDeviceNum() * config.getSensorNum() * config.getPtNum();
+    } finally {
+      for (String filePath : config.getFilePaths()) {
+        new File(filePath).delete();
+      }
     }
   }
 
@@ -43,9 +44,25 @@ public class ParaBenchMark {
     executeParallelRead(config);
   }
 
+  private LoadGenerator getLoadGenerator(BenchMarkConfig config) {
+    if (config.isUsePreFetch()) {
+      return new PrefetchLoadGenerator(new UniformLoadGenerator(config));
+    } else {
+      return new UniformLoadGenerator(config);
+    }
+  }
+
+  private QueryGenerator getQueryGenerator(BenchMarkConfig config) {
+    if (config.isUsePreFetch()) {
+      return new PrefetchQueryGenerator(new RandomQueryGenerator(config));
+    } else {
+      return new RandomQueryGenerator(config);
+    }
+  }
+
   private void executeParallelWrite(BenchMarkConfig config)
       throws IOException, WriteProcessException {
-    LoadGenerator generator = new PrefetchLoadGenerator(new UniformLoadGenerator(config));
+    LoadGenerator generator = getLoadGenerator(config);
     List<String> paths = Arrays.asList(config.getFilePaths());
     ParaTsMeta meta = new ParaTsMeta(paths, config.getHashFunc());
     ParaTsFileWriter writer = new ParaTsFileWriter(meta);
@@ -54,7 +71,7 @@ public class ParaBenchMark {
   }
 
   private void executeParallelRead(BenchMarkConfig config) throws IOException {
-    QueryGenerator generator = new PrefetchQueryGenerator(new RandomQueryGenerator(config));
+    QueryGenerator generator = getQueryGenerator(config);
     List<String> paths = Arrays.asList(config.getFilePaths());
     ParaTsMeta meta = new ParaTsMeta(paths, config.getHashFunc());
     ParaTsFileReader reader = new ParaTsFileReader(meta);
@@ -69,7 +86,7 @@ public class ParaBenchMark {
 
   private void executeNonParallelWrite(BenchMarkConfig config)
       throws IOException, WriteProcessException {
-    LoadGenerator generator = new PrefetchLoadGenerator(new UniformLoadGenerator(config));
+    LoadGenerator generator = getLoadGenerator(config);
     String path = config.getFilePaths()[0];
     TsFileWriter writer = new TsFileWriter(new File(path));
     registerMeta(config, writer);
@@ -77,7 +94,7 @@ public class ParaBenchMark {
   }
 
   private void executeNonParallelRead(BenchMarkConfig config) throws IOException {
-    QueryGenerator generator = new PrefetchQueryGenerator(new RandomQueryGenerator(config));
+    QueryGenerator generator = getQueryGenerator(config);
     String path = config.getFilePaths()[0];
     ReadOnlyTsFile reader = new ReadOnlyTsFile(new TsFileSequenceReader(path));
     executeRead(generator, reader);
@@ -132,8 +149,9 @@ public class ParaBenchMark {
   private static void setFilePaths(BenchMarkConfig config, int[] fileNums, String[] parentDirs) {
     List<String> filePaths = new ArrayList<>();
     for (int i = 0; i < parentDirs.length; i++) {
+      new File(parentDirs[i]).mkdirs();
       for (int j = 0; j < fileNums[i]; j++) {
-        filePaths.add(parentDirs[i] + File.separator + "tsfile" + i);
+        filePaths.add(parentDirs[i] + File.separator + "tsfile" + j);
       }
     }
     config.setFilePaths(filePaths.toArray(new String[0]));
@@ -142,36 +160,61 @@ public class ParaBenchMark {
   public static void main(String[] args) throws IOException, WriteProcessException {
     ParaBenchMark benchMark = new ParaBenchMark();
     BenchMarkConfig config = new BenchMarkConfig();
-    String reportPath = "report.csv";
+    String reportPath = "report3.csv";
     String[] parentDirs = new String[] {
-        ""
+        "d:\\tsfiles", "f:\\tsfiles"
     };
     config.setUseParallel(true);
-    config.setDeviceSelectRatio(0.5);
-    config.setSensorSelectRatio(0.5);
-    config.setTimeSelectRatio(0.5);
+    config.setDeviceSelectRatio(0.1);
+    config.setSensorSelectRatio(0.1);
+    config.setTimeSelectRatio(0.1);
     config.setQueryNum(10);
-    int totalFileNum = 5;
+    int totalFileNum = 12;
 
     try (FileWriter writer = new FileWriter(reportPath)) {
       writer.write(benchMark.genReportHeader() + '\n');
-      for (int fileNumInSSD = 0; fileNumInSSD <= totalFileNum; fileNumInSSD++) {
+
+//      // mixed hdd and ssd
+//      for (int fileNumInSSD = 0; fileNumInSSD <= totalFileNum; fileNumInSSD++) {
+//        int[] fileNums = new int[] {
+//            totalFileNum - fileNumInSSD, fileNumInSSD
+//        };
+//        setFilePaths(config, fileNums, parentDirs);
+//        benchMark.execute(config);
+//        writer.write(benchMark.genReport(config) + '\n');
+//      }
+//
+//      config.setUseParallel(false);
+//      // single file in hdd
+//      setFilePaths(config, new int[]{1, 0}, parentDirs);
+//      benchMark.execute(config);
+//      writer.write(benchMark.genReport(config) + '\n');
+//
+//      // single file in ssd
+//      setFilePaths(config, new int[]{0, 1}, parentDirs);
+//      benchMark.execute(config);
+//      writer.write(benchMark.genReport(config) + '\n');
+
+      config.setUseParallel(true);
+      // pure hdd
+      for (int fileNum = 1; fileNum <= totalFileNum; fileNum++) {
         int[] fileNums = new int[] {
-            totalFileNum - fileNumInSSD, fileNumInSSD
+            fileNum, 0
         };
         setFilePaths(config, fileNums, parentDirs);
         benchMark.execute(config);
         writer.write(benchMark.genReport(config) + '\n');
       }
-      config.setUseParallel(false);
-      // single file in hdd
-      setFilePaths(config, new int[]{1, 0}, parentDirs);
-      benchMark.execute(config);
-      writer.write(benchMark.genReport(config) + '\n');
-      // single file in ssd
-      setFilePaths(config, new int[]{0, 1}, parentDirs);
-      benchMark.execute(config);
-      writer.write(benchMark.genReport(config) + '\n');
+
+      // pure ssd
+      for (int fileNum = 1; fileNum <= totalFileNum; fileNum++) {
+        int[] fileNums = new int[] {
+            0, fileNum
+        };
+        setFilePaths(config, fileNums, parentDirs);
+        benchMark.execute(config);
+        writer.write(benchMark.genReport(config) + '\n');
+      }
     }
   }
 }

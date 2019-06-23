@@ -14,8 +14,8 @@ public class BenchMarkConfig {
   };
 
   private int deviceNum = 100;
-  private int sensorNum = 100;
-  private int ptNum = 100;
+  private int sensorNum = 1000;
+  private int ptNum = 1000;
   private TSDataType dataType = TSDataType.DOUBLE;
   private TSEncoding encoding = TSEncoding.PLAIN;
 
@@ -25,6 +25,8 @@ public class BenchMarkConfig {
   private int queryNum = 100;
 
   private HashFunc hashFunc = String::hashCode;
+
+  private boolean usePreFetch = false;
 
   public boolean isUseParallel() {
     return useParallel;
@@ -120,6 +122,14 @@ public class BenchMarkConfig {
 
   public void setEncoding(TSEncoding encoding) {
     this.encoding = encoding;
+  }
+
+  public boolean isUsePreFetch() {
+    return usePreFetch;
+  }
+
+  public void setUsePreFetch(boolean usePreFetch) {
+    this.usePreFetch = usePreFetch;
   }
 
   @SuppressWarnings("Duplicates")

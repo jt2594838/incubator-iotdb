@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.iotdb.tsfile.exception.write.WriteProcessException;
 import org.apache.iotdb.tsfile.write.ITsFileWriter;
 import org.apache.iotdb.tsfile.write.TsFileWriter;
@@ -32,6 +33,7 @@ public class ParaTsFileWriter implements ITsFileWriter {
   private WriteConsumer[] writeConsumers;
 
   private boolean closed = false;
+  private AtomicInteger queueRecordCnt = new AtomicInteger(0);
 
   public ParaTsFileWriter(ParaTsMeta meta) throws IOException {
     this.meta = meta;
@@ -89,7 +91,16 @@ public class ParaTsFileWriter implements ITsFileWriter {
     int hash = meta.getHashFunc().hash(record.deviceId);
     hash = hash < 0 ? -hash : hash;
     int idx = hash % writers.length;
+
+    while (queueRecordCnt.get() > 1000) {
+      try {
+        Thread.sleep(1);
+      } catch (InterruptedException e) {
+        throw new IOException(e);
+      }
+    }
     recordQueues[idx].add(record);
+    queueRecordCnt.incrementAndGet();
   }
 
   /**
@@ -157,6 +168,7 @@ public class ParaTsFileWriter implements ITsFileWriter {
         }
         try {
           tsFileWriter.write(record);
+          queueRecordCnt.getAndDecrement();
         } catch (IOException | WriteProcessException e) {
           logger.error("Cannot write record {}", record, e);
         }
